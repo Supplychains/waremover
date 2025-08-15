@@ -1,0 +1,365 @@
+/* Общие стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    overflow: hidden;
+}
+
+#gameContainer {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* Экраны */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Главное меню */
+#mainMenu h1 {
+    font-size: 4rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#mainMenu p {
+    font-size: 1.2rem;
+    color: #7f8c8d;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.menu-btn {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.menu-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Выбор режима */
+.mode-buttons {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.mode-btn {
+    padding: 2rem;
+    background: white;
+    border: 2px solid #3498db;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-width: 250px;
+}
+
+.mode-btn:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mode-btn h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.mode-btn p {
+    font-size: 1rem;
+    color: #7f8c8d;
+}
+
+.mode-btn:hover p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Выбор метода комплектования */
+.method-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.method-btn {
+    padding: 1.5rem;
+    background: white;
+    border: 2px solid #e74c3c;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-width: 200px;
+}
+
+.method-btn:hover {
+    background: #e74c3c;
+    color: white;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.method-btn h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.method-btn p {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.method-btn:hover p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Кнопка "Назад" */
+.back-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    background: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #7f8c8d;
+    transform: translateY(-2px);
+}
+
+/* Игровой экран */
+#gameScreen {
+    background: #2c3e50;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0;
+}
+
+#gameHUD {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(44, 62, 80, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    color: white;
+    font-size: 1.1rem;
+    z-index: 100;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background: #34495e;
+    border: 2px solid #2c3e50;
+}
+
+#orderPanel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 250px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 50;
+}
+
+#orderPanel h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+#orderList {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.order-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: #ecf0f1;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-item.completed {
+    background: #d5f4e6;
+    color: #27ae60;
+}
+
+.order-item.current {
+    background: #ffeaa7;
+    border: 2px solid #fdcb6e;
+}
+
+#interactionPanel {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 50;
+    min-width: 300px;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.pause-btn {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    padding: 0.8rem 1.2rem;
+    background: #f39c12;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    z-index: 50;
+}
+
+.pause-btn:hover {
+    background: #e67e22;
+}
+
+/* Экран результатов */
+#resultsContent {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+#resultsContent div {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+#resultsContent span {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.results-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Экран справки */
+.help-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2rem;
+    max-width: 600px;
+    text-align: left;
+}
+
+.help-content h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+}
+
+.help-content h3:first-child {
+    margin-top: 0;
+}
+
+.help-content ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.help-content li {
+    margin-bottom: 0.5rem;
+}
+
+.help-content p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .mode-buttons {
+        flex-direction: column;
+    }
+    
+    .method-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    #orderPanel {
+        width: 200px;
+        right: 10px;
+    }
+    
+    #gameCanvas {
+        width: 100%;
+        height: calc(100vh - 60px);
+    }
+}
+
