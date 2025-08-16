@@ -218,19 +218,30 @@ class WareMoverGame {
     }
     
     generateShelfItems() {
+        /*
+         * Генерация товаров на стеллаже.
+         * Каждая позиция представляет один вид товара и хранит максимальное
+         * количество единиц, доступных для подбора. По условиям задачи
+         * запас товара на одной позиции не должен превышать 4, поэтому
+         * количество выбирается случайно от 1 до 4. Идентификатор
+         * генерируется случайным образом, а имя товара формируется как
+         * «Товар N» по номеру позиции.
+         */
         const itemTypes = ['box', 'bottle', 'folder', 'package', 'container'];
         const items = [];
-        
+
         for (let i = 0; i < 12; i++) {
             items.push({
                 id: `item_${Math.random().toString(36).substr(2, 9)}`,
                 type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
                 name: `Товар ${i + 1}`,
-                quantity: Math.floor(Math.random() * 10) + 1,
+                // Ограничиваем количество от 1 до 4, чтобы нельзя было
+                // бесконечно собирать товар с полки.
+                quantity: Math.floor(Math.random() * 4) + 1,
                 position: i
             });
         }
-        
+
         return items;
     }
     
@@ -256,19 +267,26 @@ class WareMoverGame {
         // Determine the unique product names available in the warehouse.
         const uniqueNames = Array.from(new Set(allItems.map(item => item.name)));
 
-        // We will choose up to 8 unique products for the order (or less if fewer exist).
+        // Выберем до 9 уникальных товаров (не менее 5) для заказа. Если в наличии
+        // меньше наименований, берем все доступные. Таким образом, экран заказа
+        // будет показывать до 9 строк без прокрутки.
         const selectedNames = [];
-        while (selectedNames.length < 8 && uniqueNames.length > 0) {
+        const maxOrderItems = Math.min(uniqueNames.length, 9);
+        while (selectedNames.length < maxOrderItems) {
+            // Берем случайное имя из оставшихся
             const index = Math.floor(Math.random() * uniqueNames.length);
             const name = uniqueNames.splice(index, 1)[0];
             selectedNames.push(name);
         }
 
-        // For each selected product name, compute how many copies exist across all shelves.
+        // Для каждого выбранного наименования подсчитываем суммарный доступный запас
+        // (сумму quantity на всех полках) и выбираем требуемое количество от 1 до
+        // общего запаса. Это позволяет корректно учитывать ограничения по складу.
         order.items = selectedNames.map(name => {
-            const occurrences = allItems.filter(item => item.name === name).length;
-            // Required quantity between 1 and the number of occurrences (inclusive).
-            const required = Math.floor(Math.random() * occurrences) + 1;
+            const availableItems = allItems.filter(item => item.name === name);
+            const totalUnits = availableItems.reduce((sum, it) => sum + it.quantity, 0);
+            // Требуемое количество от 1 до общего запаса
+            const required = Math.floor(Math.random() * totalUnits) + 1;
             order.totalItems += required;
             return {
                 name: name,
@@ -286,6 +304,12 @@ class WareMoverGame {
         this.gameTime = 0;
         this.ordersCompleted = 0;
         this.totalErrors = 0;
+
+        // При старте новой игры переинициализируем склад, чтобы
+        // расстановка товаров и их количества каждый раз была разной.
+        // Это нужно для выполнения требования случайного запаса на полках.
+        this.initializeWarehouse();
+        // Генерируем заказ после обновления склада.
         this.currentOrder = this.generateOrder();
         
         // Сброс позиции игрока
@@ -479,12 +503,23 @@ class WareMoverGame {
     }
     
     pickItem(item) {
-        // Найти этот товар в текущем заказе
-        // Find the corresponding order line by product name rather than unique ID.
+        // Найти этот товар в текущем заказе по названию
         const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
-        
+
+        // Проверяем, что на полке еще есть единицы товара
+        if (item.quantity <= 0) {
+            // Запас товара исчерпан — берем лишнее, получаем штраф
+            this.totalErrors++;
+            this.score -= 5;
+            this.updateOrderPanel();
+            this.updateHUD();
+            return;
+        }
+
         if (orderItem && !orderItem.completed) {
             if (orderItem.pickedQuantity < orderItem.requiredQuantity) {
+                // Уменьшаем остаток на полке
+                item.quantity--;
                 orderItem.pickedQuantity++;
                 this.score += 10;
                 
@@ -505,6 +540,8 @@ class WareMoverGame {
         
         this.updateOrderPanel();
         this.updateHUD();
+        // Перерисовываем экран, чтобы обновилось отображение количества на полке
+        this.render();
     }
     
     returnItem(item) {
@@ -516,10 +553,14 @@ class WareMoverGame {
             orderItem.pickedQuantity--;
             orderItem.completed = false;
             this.score -= 5; // Штраф за возврат
+            // Вернуть единицу товара на полку
+            item.quantity++;
         }
         
         this.updateOrderPanel();
         this.updateHUD();
+        // Перерисовываем, чтобы обновить отображение количества
+        this.render();
     }
     
     isOrderCompleted() {
@@ -547,23 +588,31 @@ class WareMoverGame {
         const orderList = document.getElementById('orderList');
         orderList.innerHTML = '';
         
+
         this.currentOrder.items.forEach(item => {
             const div = document.createElement('div');
             div.className = 'order-item';
-            
+
             if (item.completed) {
                 div.classList.add('completed');
             } else if (item.pickedQuantity > 0) {
                 div.classList.add('current');
             }
-            
+
             div.innerHTML = `
                 <span>${item.name}</span>
                 <span>${item.pickedQuantity}/${item.requiredQuantity}</span>
             `;
-            
+
             orderList.appendChild(div);
         });
+
+        // Настраиваем высоту списка заказов так, чтобы все строки были видны без прокрутки.
+        // Предполагаем высоту каждой строки порядка 36px (включая отступы), добавляем небольшой
+        // запас. Ограничиваем overflow, чтобы отключить полосы прокрутки.
+        const rowHeight = 36;
+        orderList.style.maxHeight = `${this.currentOrder.items.length * rowHeight + 20}px`;
+        orderList.style.overflowY = 'hidden';
     }
     
     formatTime(ms) {
@@ -635,7 +684,7 @@ class WareMoverGame {
                 // Highlight shelves that contain any item needed for the current order.
                 const hasRequiredItem = shelf.items.some(item => 
                     this.currentOrder.items.some(orderItem => 
-                        orderItem.name === item.name && !orderItem.completed
+                        orderItem.name === item.name && !orderItem.completed && item.quantity > 0
                     )
                 );
                 if (hasRequiredItem) {
@@ -703,7 +752,8 @@ class WareMoverGame {
             
             // Подсветка для нужных товаров
             const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
-            if (orderItem && !orderItem.completed) {
+            // Подсвечиваем только те товары, которые ещё нужны и имеются на полке
+            if (orderItem && !orderItem.completed && item.quantity > 0) {
                 this.ctx.strokeStyle = '#f39c12';
                 this.ctx.lineWidth = 3;
                 this.ctx.strokeRect(x - 2, y - 2, itemWidth - 6, itemHeight - 6);
