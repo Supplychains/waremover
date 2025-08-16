@@ -235,36 +235,48 @@ class WareMoverGame {
     }
     
     generateOrder() {
+        // Generate a new order based on item names rather than unique IDs.
+        // Multiple shelves may contain items with the same name (e.g., "Товар 3").
+        // To allow orders requiring multiple units of the same product, we unify by name.
         const order = {
             id: `order_${Date.now()}`,
             items: [],
-            totalItems: 20,
+            totalItems: 0,
             completedItems: 0
         };
-        
-        // Выбираем случайные товары из стеллажей
+
+        // Flatten all items across shelves into one array.
         const allItems = [];
-        this.warehouse.shelves.forEach((shelf, shelfIndex) => {
+        this.warehouse.shelves.forEach((shelf) => {
             shelf.items.forEach(item => {
-                allItems.push({ ...item, shelfIndex });
+                allItems.push(item);
             });
         });
-        
-        // Создаем заказ из 20 предметов (8 позиций)
-        const selectedPositions = [];
-        while (selectedPositions.length < 8) {
-            const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
-            if (!selectedPositions.find(p => p.id === randomItem.id)) {
-                selectedPositions.push({
-                    ...randomItem,
-                    requiredQuantity: Math.floor(Math.random() * 3) + 1,
-                    pickedQuantity: 0,
-                    completed: false
-                });
-            }
+
+        // Determine the unique product names available in the warehouse.
+        const uniqueNames = Array.from(new Set(allItems.map(item => item.name)));
+
+        // We will choose up to 8 unique products for the order (or less if fewer exist).
+        const selectedNames = [];
+        while (selectedNames.length < 8 && uniqueNames.length > 0) {
+            const index = Math.floor(Math.random() * uniqueNames.length);
+            const name = uniqueNames.splice(index, 1)[0];
+            selectedNames.push(name);
         }
-        
-        order.items = selectedPositions;
+
+        // For each selected product name, compute how many copies exist across all shelves.
+        order.items = selectedNames.map(name => {
+            const occurrences = allItems.filter(item => item.name === name).length;
+            // Required quantity between 1 and the number of occurrences (inclusive).
+            const required = Math.floor(Math.random() * occurrences) + 1;
+            order.totalItems += required;
+            return {
+                name: name,
+                requiredQuantity: required,
+                pickedQuantity: 0,
+                completed: false
+            };
+        });
         return order;
     }
     
@@ -468,7 +480,8 @@ class WareMoverGame {
     
     pickItem(item) {
         // Найти этот товар в текущем заказе
-        const orderItem = this.currentOrder.items.find(oi => oi.id === item.id);
+        // Find the corresponding order line by product name rather than unique ID.
+        const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
         
         if (orderItem && !orderItem.completed) {
             if (orderItem.pickedQuantity < orderItem.requiredQuantity) {
@@ -496,7 +509,8 @@ class WareMoverGame {
     
     returnItem(item) {
         // Найти этот товар в текущем заказе
-        const orderItem = this.currentOrder.items.find(oi => oi.id === item.id);
+        // Find the corresponding order line by product name rather than unique ID.
+        const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
         
         if (orderItem && orderItem.pickedQuantity > 0) {
             orderItem.pickedQuantity--;
@@ -618,12 +632,12 @@ class WareMoverGame {
             
             // Подсветка для Pick-by-Light
             if (this.pickingMethod === 'pickByLight') {
+                // Highlight shelves that contain any item needed for the current order.
                 const hasRequiredItem = shelf.items.some(item => 
                     this.currentOrder.items.some(orderItem => 
-                        orderItem.id === item.id && !orderItem.completed
+                        orderItem.name === item.name && !orderItem.completed
                     )
                 );
-                
                 if (hasRequiredItem) {
                     this.ctx.strokeStyle = '#f39c12';
                     this.ctx.lineWidth = 3;
@@ -688,7 +702,7 @@ class WareMoverGame {
             this.ctx.fillRect(x, y, itemWidth - 10, itemHeight - 10);
             
             // Подсветка для нужных товаров
-            const orderItem = this.currentOrder.items.find(oi => oi.id === item.id);
+            const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
             if (orderItem && !orderItem.completed) {
                 this.ctx.strokeStyle = '#f39c12';
                 this.ctx.lineWidth = 3;
