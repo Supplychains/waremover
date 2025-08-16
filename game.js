@@ -129,12 +129,16 @@ class WareMoverGame {
             // mark key as pressed
             this.keys[e.code] = true;
 
-            // Trigger interaction on E or alternative keys when playing.
+            // Handle interaction or exit shelf view on key press.
             // Many users with non‑QWERTY layouts may press a different physical key
-            // for the letter «Е». To make interaction more accessible,
-            // allow the Space or F keys as alternatives.
+            // for the letter «E». We therefore allow F and Space as alternatives.
             if (['KeyE', 'KeyF', 'Space'].includes(e.code) && this.gameState === 'playing') {
-                this.handleInteraction();
+                // If already in shelf view, exit. Otherwise, attempt interaction.
+                if (this.inShelfView) {
+                    this.exitShelfView();
+                } else {
+                    this.handleInteraction();
+                }
             }
 
             // Pause/unpause on Escape
@@ -303,66 +307,104 @@ class WareMoverGame {
     }
     
     updatePlayer() {
-        if (this.gameState !== 'playing' || this.inShelfView) return;
+        if (this.inShelfView) return;
         
-        if (this.keys['KeyW'] || this.keys['ArrowUp']) {
-            this.player.y -= this.player.speed;
-        }
-        if (this.keys['KeyS'] || this.keys['ArrowDown']) {
-            this.player.y += this.player.speed;
-        }
-        if (this.keys['KeyA'] || this.keys['ArrowLeft']) {
-            this.player.x -= this.player.speed;
-        }
-        if (this.keys['KeyD'] || this.keys['ArrowRight']) {
-            this.player.x += this.player.speed;
+        let dx = 0;
+        let dy = 0;
+        
+        if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= this.player.speed;
+        if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += this.player.speed;
+        if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= this.player.speed;
+        if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += this.player.speed;
+        
+        // Проверка коллизий со стенами
+        const newX = this.player.x + dx;
+        const newY = this.player.y + dy;
+        
+        if (newX >= 0 && newX + this.player.width <= this.warehouse.width) {
+            this.player.x = newX;
         }
         
-        // Ограничение передвижения
-        this.player.x = Math.max(0, Math.min(this.player.x, this.warehouse.width - this.player.width));
-        this.player.y = Math.max(0, Math.min(this.player.y, this.warehouse.height - this.player.height));
+        if (newY >= 0 && newY + this.player.height <= this.warehouse.height) {
+            this.player.y = newY;
+        }
     }
     
     checkInteractions() {
-        if (this.gameState !== 'playing' || this.inShelfView) return;
-        
         this.nearInteractable = null;
         
-        // Проверка опасности со стеллажами
+        // Проверка близости к компьютеру
+        if (this.isNear(this.player, this.warehouse.computer)) {
+            this.nearInteractable = 'computer';
+        }
+        
+        // Проверка близости к стеллажам
         this.warehouse.shelves.forEach((shelf, index) => {
-            if (this.isColliding(this.player, shelf)) {
+            if (this.isNear(this.player, shelf)) {
                 this.nearInteractable = { type: 'shelf', index };
             }
         });
         
-        // Проверка компьютера
-        if (this.isColliding(this.player, this.warehouse.computer)) {
-            this.nearInteractable = { type: 'computer' };
+        // Показать/скрыть панель взаимодействия
+        const panel = document.getElementById('interactionPanel');
+        if (this.nearInteractable) {
+            panel.classList.remove('hidden');
+            this.updateInteractionPanel();
+        } else {
+            panel.classList.add('hidden');
         }
     }
     
-    isColliding(rect1, rect2) {
-        return (
-            rect1.x < rect2.x + rect2.width &&
-            rect1.x + rect1.width > rect2.x &&
-            rect1.y < rect2.y + rect2.height &&
-            rect1.y + rect1.height > rect2.y
-        );
+    isNear(obj1, obj2, distance = 50) {
+        const centerX1 = obj1.x + obj1.width / 2;
+        const centerY1 = obj1.y + obj1.height / 2;
+        const centerX2 = obj2.x + obj2.width / 2;
+        const centerY2 = obj2.y + obj2.height / 2;
+        
+        const dist = Math.sqrt(Math.pow(centerX2 - centerX1, 2) + Math.pow(centerY2 - centerY1, 2));
+        return dist < distance;
+    }
+    
+    updateInteractionPanel() {
+        const content = document.getElementById('interactionContent');
+        
+        if (this.nearInteractable === 'computer') {
+            content.innerHTML = '<p>Нажмите E, чтобы получить заказ</p>';
+        } else if (this.nearInteractable && this.nearInteractable.type === 'shelf') {
+            content.innerHTML = '<p>Нажмите E, чтобы просмотреть стеллаж</p>';
+        }
     }
     
     handleInteraction() {
-        if (!this.nearInteractable) return;
-        
-        if (this.nearInteractable.type === 'shelf') {
+        if (this.nearInteractable === 'computer') {
+            this.showOrderInfo();
+        } else if (this.nearInteractable && this.nearInteractable.type === 'shelf') {
             this.enterShelfView(this.nearInteractable.index);
-        } else if (this.nearInteractable.type === 'computer') {
-            // Логика взаимодействия с компьютером
         }
     }
     
-    enterShelfView(index) {
+    showOrderInfo() {
+        // Показать информацию о заказе в зависимости от метода комплектования
+        this.updateOrderPanel();
+        
+        if (this.pickingMethod === 'pickByVoice') {
+            this.speakOrderInfo();
+        }
+    }
+    
+    speakOrderInfo() {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance();
+            utterance.text = `Новый заказ. Необходимо собрать ${this.currentOrder.items.length} позиций.`;
+            utterance.lang = 'ru-RU';
+            speechSynthesis.speak(utterance);
+        }
+    }
+    
+    enterShelfView(shelfIndex) {
         this.inShelfView = true;
-        this.currentShelf = index;
+        this.currentShelf = shelfIndex;
+        this.renderShelfView();
     }
     
     exitShelfView() {
@@ -371,25 +413,31 @@ class WareMoverGame {
     }
     
     handleShelfClick(e) {
+        // Обработка клика по товару в стеллаже
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Определение номера кубика по координатам
+        // Определить, на какой товар кликнули
+        const shelf = this.warehouse.shelves[this.currentShelf];
         const itemIndex = this.getClickedItemIndex(x, y);
-        if (itemIndex >= 0) {
-            this.pickItem(this.warehouse.shelves[this.currentShelf].items[itemIndex]);
+        
+        if (itemIndex !== -1) {
+            this.pickItem(shelf.items[itemIndex]);
         }
     }
     
     handleShelfRightClick(e) {
+        // Обработка правого клика (возврат товара)
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
+        const shelf = this.warehouse.shelves[this.currentShelf];
         const itemIndex = this.getClickedItemIndex(x, y);
-        if (itemIndex >= 0) {
-            this.returnItem(this.warehouse.shelves[this.currentShelf].items[itemIndex]);
+        
+        if (itemIndex !== -1) {
+            this.returnItem(shelf.items[itemIndex]);
         }
     }
     
@@ -657,15 +705,7 @@ class WareMoverGame {
             }
         });
         
-        // Exit shelf view when E, F or Space are pressed.  This
-        // broadens the set of keys users can press to return to the
-        // warehouse, which can be especially helpful on non‑QWERTY keyboards.
-        if (this.keys['KeyE'] || this.keys['KeyF'] || this.keys['Space']) {
-            this.exitShelfView();
-            this.keys['KeyE'] = false;
-            this.keys['KeyF'] = false;
-            this.keys['Space'] = false;
-        }
+        // Exit from shelf view is handled in the keydown event handler.
     }
 }
 
@@ -678,3 +718,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Добавляем отладочную информацию в конец файла
 console.log('WareMover game loaded successfully');
+
