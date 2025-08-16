@@ -129,10 +129,18 @@ class WareMoverGame {
             // mark key as pressed
             this.keys[e.code] = true;
 
-            // Handle interaction or exit shelf view on key press.
-            // Many users with non‑QWERTY layouts may press a different physical key
-            // for the letter «E». We therefore allow F and Space as alternatives.
-            if (['KeyE', 'KeyF', 'Space'].includes(e.code) && this.gameState === 'playing') {
+            /*
+             * Handle interaction or exit shelf view on key press.
+             * Many users with non‑QWERTY layouts may press a different physical key
+             * for the letter «E». We therefore allow F and Space as alternatives.
+             *
+             * We only act on the initial keydown event (e.repeat === false). Without this guard
+             * auto‑repeat would quickly fire another keydown while the key is held down. That would
+             * trigger exit immediately after entering the shelf view. By ignoring repeated events,
+             * the player must release and press the key again to exit, giving them time to interact
+             * with the shelf contents.
+             */
+            if (!e.repeat && ['KeyE', 'KeyF', 'Space'].includes(e.code) && this.gameState === 'playing') {
                 // If already in shelf view, exit. Otherwise, attempt interaction.
                 if (this.inShelfView) {
                     this.exitShelfView();
