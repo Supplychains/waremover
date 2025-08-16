@@ -119,9 +119,13 @@ class WareMoverGame {
             this.showScreen('mainMenu');
         });
         
-        // Пауза
+        // Кнопка выхода в меню (замена паузы)
         document.getElementById('pauseBtn').addEventListener('click', () => {
-            this.togglePause();
+            // При нажатии завершаем текущую игру и возвращаемся в главное меню.
+            this.inShelfView = false;
+            this.currentShelf = null;
+            this.gameState = 'menu';
+            this.showScreen('mainMenu');
         });
         
         // Управление клавиатурой
@@ -219,27 +223,57 @@ class WareMoverGame {
     
     generateShelfItems() {
         /*
-         * Генерация товаров на стеллаже.
-         * Каждая позиция представляет один вид товара и хранит максимальное
-         * количество единиц, доступных для подбора. По условиям задачи
-         * запас товара на одной позиции не должен превышать 4, поэтому
-         * количество выбирается случайно от 1 до 4. Идентификатор
-         * генерируется случайным образом, а имя товара формируется как
-         * «Товар N» по номеру позиции.
+         * Генерация товаров на стеллаже с пустыми ячейками.
+         * На одной полке может быть не более 12 позиций (4x3). Однако не
+         * каждая позиция обязательно содержит товар. Мы выбираем случайное
+         * число товаров (между 5 и 8) и размещаем их в случайных ячейках.
+         * Остальные ячейки остаются пустыми (null). Это делает игру
+         * интереснее, поскольку не на каждой полке есть полный набор
+         * продукции.
          */
         const itemTypes = ['box', 'bottle', 'folder', 'package', 'container'];
-        const items = [];
+        const totalPositions = 12;
+        const items = new Array(totalPositions).fill(null);
 
-        for (let i = 0; i < 12; i++) {
-            items.push({
+        // Список доступных наименований. Мы используем одинаковые имена
+        // "Товар N" для всех полок, чтобы игрок понимал, какой товар искать.
+        const names = [];
+        for (let i = 1; i <= totalPositions; i++) {
+            names.push(`Товар ${i}`);
+        }
+
+        // Определяем количество товаров на этой полке (от 5 до 8).
+        const numItems = 5 + Math.floor(Math.random() * 4); // 5..8
+        // Выберем случайные наименования без повторений для размещения.
+        const availableNames = names.slice();
+        const selectedNames = [];
+        for (let i = 0; i < numItems && availableNames.length > 0; i++) {
+            const idx = Math.floor(Math.random() * availableNames.length);
+            selectedNames.push(availableNames.splice(idx, 1)[0]);
+        }
+
+        // Выберем случайные позиции для товаров.
+        const positions = [];
+        for (let i = 0; i < totalPositions; i++) {
+            positions.push(i);
+        }
+        // Перемешаем позиции
+        for (let i = positions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [positions[i], positions[j]] = [positions[j], positions[i]];
+        }
+
+        // Заполняем выбранные позиции товарами
+        for (let i = 0; i < selectedNames.length; i++) {
+            const pos = positions[i];
+            items[pos] = {
                 id: `item_${Math.random().toString(36).substr(2, 9)}`,
                 type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
-                name: `Товар ${i + 1}`,
+                name: selectedNames[i],
                 // Ограничиваем количество от 1 до 4, чтобы нельзя было
                 // бесконечно собирать товар с полки.
-                quantity: Math.floor(Math.random() * 4) + 1,
-                position: i
-            });
+                quantity: Math.floor(Math.random() * 4) + 1
+            };
         }
 
         return items;
@@ -467,7 +501,10 @@ class WareMoverGame {
         const itemIndex = this.getClickedItemIndex(x, y);
         
         if (itemIndex !== -1) {
-            this.pickItem(shelf.items[itemIndex]);
+            const item = shelf.items[itemIndex];
+            if (item) {
+                this.pickItem(item);
+            }
         }
     }
     
@@ -481,7 +518,10 @@ class WareMoverGame {
         const itemIndex = this.getClickedItemIndex(x, y);
         
         if (itemIndex !== -1) {
-            this.returnItem(shelf.items[itemIndex]);
+            const item = shelf.items[itemIndex];
+            if (item) {
+                this.returnItem(item);
+            }
         }
     }
     
@@ -721,10 +761,11 @@ class WareMoverGame {
         this.ctx.fillStyle = '#2c3e50';
         this.ctx.fillRect(0, 0, this.warehouse.width, this.warehouse.height);
         
-        // Заголовок
+        // Заголовок: показываем номер стеллажа из общего количества
         this.ctx.fillStyle = 'white';
         this.ctx.font = '24px Arial';
-        this.ctx.fillText(`Стеллаж ${this.currentShelf + 1}`, 20, 40);
+        const totalShelves = this.warehouse.shelves.length;
+        this.ctx.fillText(`Стеллаж ${this.currentShelf + 1}/${totalShelves}`, 20, 40);
         
         // Кнопка выхода
         this.ctx.fillStyle = '#e74c3c';
@@ -745,33 +786,34 @@ class WareMoverGame {
             const row = Math.floor(index / 4);
             const x = startX + col * itemWidth;
             const y = startY + row * itemHeight;
-            
+
+            // Если позиция пуста (нет товара), просто рисуем серый прямоугольник
+            if (!item) {
+                this.ctx.fillStyle = '#bdc3c7';
+                this.ctx.fillRect(x, y, itemWidth - 10, itemHeight - 10);
+                return;
+            }
+
             // Фон товара
             this.ctx.fillStyle = '#ecf0f1';
             this.ctx.fillRect(x, y, itemWidth - 10, itemHeight - 10);
-            
-            // Подсветка для нужных товаров
-            const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
-            // Подсвечиваем только те товары, которые ещё нужны и имеются на полке
-            if (orderItem && !orderItem.completed && item.quantity > 0) {
-                this.ctx.strokeStyle = '#f39c12';
-                this.ctx.lineWidth = 3;
-                this.ctx.strokeRect(x - 2, y - 2, itemWidth - 6, itemHeight - 6);
-            }
-            
+
+            // Подсветка товаров убрана: не подсвечиваем конкретные ячейки.
+
             // Название товара
             this.ctx.fillStyle = '#2c3e50';
             this.ctx.font = '14px Arial';
             this.ctx.fillText(item.name, x + 10, y + 25);
-            
-            // Количество
+
+            // Количество на полке
             this.ctx.fillText(`Кол-во: ${item.quantity}`, x + 10, y + 45);
-            
-            // Прогресс сбора
+
+            // Прогресс сбора, если товар присутствует в заказе
+            const orderItem = this.currentOrder.items.find(oi => oi.name === item.name);
             if (orderItem) {
                 this.ctx.fillText(
-                    `Собрано: ${orderItem.pickedQuantity}/${orderItem.requiredQuantity}`, 
-                    x + 10, 
+                    `Собрано: ${orderItem.pickedQuantity}/${orderItem.requiredQuantity}`,
+                    x + 10,
                     y + 65
                 );
             }
