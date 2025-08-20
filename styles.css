@@ -1,15 +1,15 @@
 :root{
-  --bg:#0f172a;        /* slate-900 */
-  --panel:#111827;     /* gray-900 */
-  --card:#1f2937;      /* gray-800 */
-  --muted:#94a3b8;     /* slate-400 */
-  --text:#e5e7eb;      /* gray-200 */
-  --brand:#3b82f6;     /* blue-500 */
-  --brand-2:#2563eb;   /* blue-600 */
-  --danger:#ef4444;    /* red-500 */
-  --ok:#22c55e;        /* green-500 */
-  --accent:#f59e0b;    /* amber-500 */
-  --border:#334155;    /* slate-700 */
+  --bg:#0f172a;
+  --panel:#111827;
+  --card:#1f2937;
+  --muted:#94a3b8;
+  --text:#e5e7eb;
+  --brand:#3b82f6;
+  --brand-2:#2563eb;
+  --danger:#ef4444;
+  --ok:#22c55e;
+  --accent:#f59e0b;
+  --border:#334155;
 }
 
 *{box-sizing:border-box}
@@ -113,7 +113,7 @@ canvas{
   border:1px solid var(--border);
   border-radius:10px;
   padding:8px;
-  /* важно: игра сама выставляет высоту, но отключим скролл на всякий */
+  min-height: 320px; /* увеличена высота для 9 товаров */
   overflow-y:hidden;
 }
 
