@@ -26,7 +26,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   generateShelves();
   generateOrder();
-  renderOrder();
+  renderOrder();         // отрисуем список
+  updateOrderTotals();   // и агрегаты
 
   document.addEventListener("keydown", handleKey);
   document.getElementById("closeShelfBtn").addEventListener("click", closeShelf);
@@ -63,6 +64,27 @@ function generateOrder() {
   }
 }
 
+// ====== Агрегаты по заказу ======
+function computeTotals(){
+  let requiredTotal = 0, collectedTotal = 0;
+  for (const id in order){
+    requiredTotal += order[id].required;
+    collectedTotal += order[id].collected;
+  }
+  return {
+    requiredTotal,
+    collectedTotal,
+    remaining: Math.max(0, requiredTotal - collectedTotal)
+  };
+}
+
+function updateOrderTotals(){
+  const {requiredTotal, collectedTotal, remaining} = computeTotals();
+  document.getElementById("requiredTotal").textContent = requiredTotal;
+  document.getElementById("collectedTotal").textContent = collectedTotal;
+  document.getElementById("remainingTotal").textContent = remaining;
+}
+
 // ====== Рендер заказа ======
 function renderOrder() {
   orderListDiv.innerHTML = "";
@@ -75,6 +97,7 @@ function renderOrder() {
     orderListDiv.appendChild(div);
   }
   document.getElementById("score").textContent = score;
+  updateOrderTotals();
 }
 
 // ====== Работа с полкой ======
@@ -105,23 +128,30 @@ function closeShelf() {
 function pickItem(itemId){
   let shelf = shelves[currentShelfIndex];
   if (!shelf[itemId] || shelf[itemId]<=0) return;
+
   if (order[itemId]){
     let o = order[itemId];
     if (o.collected < o.required){
       o.collected++;
       shelf[itemId]--;
       score += 10;
+      renderOrder(); // включает updateOrderTotals()
       if (o.collected >= o.required) checkOrderComplete();
+      return;
+    } else {
+      // лишнее игнорируем
+      return;
     }
   } else {
+    // лишний товар — штраф
     score -= 10;
+    document.getElementById("score").textContent = score;
   }
-  renderOrder();
 }
 
 // ====== Проверка завершения ======
 function checkOrderComplete() {
-  let done = Object.values(order).every(o => o.collected>=o.required);
+  const done = Object.values(order).every(o => o.collected>=o.required);
   if (done){
     clearInterval(timerInterval);
     alert("Заказ собран! Ваш счёт: " + score);
@@ -134,52 +164,4 @@ function handleKey(e){
     if (e.code==="Space"||e.code==="KeyE"){ closeShelf(); }
     return;
   }
-  if (e.code==="ArrowUp"||e.code==="KeyW"){ if (player.y>0) player.y--; }
-  if (e.code==="ArrowDown"||e.code==="KeyS"){ if (player.y<ROWS-1) player.y++; }
-  if (e.code==="ArrowLeft"||e.code==="KeyA"){ if (player.x>0) player.x--; }
-  if (e.code==="ArrowRight"||e.code==="KeyD"){ if (player.x<COLS-1) player.x++; }
-  if (e.code==="Space"||e.code==="KeyE"){
-    let index = player.y*COLS+player.x;
-    openShelf(index);
-  }
-}
-
-// ====== Отрисовка ======
-function draw(){
-  let canvas = document.getElementById("gameCanvas");
-  let ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  let w = canvas.width/COLS;
-  let h = canvas.height/ROWS;
-
-  // рисуем полки
-  for (let r=0;r<ROWS;r++){
-    for (let c=0;c<COLS;c++){
-      let index = r*COLS+c;
-      if (player.x===c && player.y===r){
-        ctx.fillStyle = "#1abc9c"; // подсветка активной полки
-      } else {
-        ctx.fillStyle = "#2c3e50";
-      }
-      ctx.fillRect(c*w+5, r*h+5, w-10,h-10);
-    }
-  }
-
-  // рисуем игрока
-  ctx.fillStyle = "yellow";
-  ctx.fillRect(
-    player.x*w + w/2 - player.size/2,
-    player.y*h + h/2 - player.size/2,
-    player.size, player.size
-  );
-}
-
-// ====== Утилиты ======
-function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
-function formatTime(t){
-  let m=Math.floor(t/60).toString().padStart(2,"0");
-  let s=(t%60).toString().padStart(2,"0");
-  return m+":"+s;
-}
+  if (e.code==="ArrowUp"||e.code==="KeyW"
