@@ -63,22 +63,18 @@
   <!-- Экран игры -->
   <section id="gameScreen" class="screen">
     <div class="layout">
-      <!-- Левая колонка: канvas + интеракции -->
       <div class="stage">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-        <!-- Панель взаимодействия рядом с игроком -->
         <div id="interactionPanel" class="interaction hidden">
           <div id="interactionContent">Нажмите E…</div>
         </div>
 
-        <!-- Верхняя панель: Выйти -->
         <div class="topbar">
           <button id="pauseBtn" class="btn small danger">Выйти</button>
         </div>
       </div>
 
-      <!-- Правая колонка: HUD и заказ -->
       <aside class="sidebar">
         <div class="hud">
           <div class="hud-row"><span>Счёт:</span> <strong id="score">0</strong></div>
@@ -97,7 +93,6 @@
     </div>
   </section>
 
-  <!-- Экран результатов -->
   <section id="resultsScreen" class="screen">
     <div class="card">
       <h2>Результаты</h2>
