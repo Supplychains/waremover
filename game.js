@@ -26,18 +26,21 @@ window.addEventListener("DOMContentLoaded", () => {
 
   generateShelves();
   generateOrder();
-  renderOrder();         // отрисуем список
-  updateOrderTotals();   // и агрегаты
+  renderOrder();
+  updateOrderTotals();
 
   document.addEventListener("keydown", handleKey);
-  document.getElementById("closeShelfBtn").addEventListener("click", closeShelf);
+  const closeBtn = document.getElementById("closeShelfBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closeShelf);
 
   setInterval(draw, 100);
   timerInterval = setInterval(() => {
     time++;
-    document.getElementById("time").textContent = formatTime(time);
+    const t = document.getElementById("time");
+    if (t) t.textContent = formatTime(time);
     score--; // штраф за время
-    document.getElementById("score").textContent = score;
+    const s = document.getElementById("score");
+    if (s) s.textContent = score;
   }, 1000);
 });
 
@@ -80,13 +83,17 @@ function computeTotals(){
 
 function updateOrderTotals(){
   const {requiredTotal, collectedTotal, remaining} = computeTotals();
-  document.getElementById("requiredTotal").textContent = requiredTotal;
-  document.getElementById("collectedTotal").textContent = collectedTotal;
-  document.getElementById("remainingTotal").textContent = remaining;
+  const rt = document.getElementById("requiredTotal");
+  const ct = document.getElementById("collectedTotal");
+  const rem = document.getElementById("remainingTotal");
+  if (rt) rt.textContent = requiredTotal;
+  if (ct) ct.textContent = collectedTotal;
+  if (rem) rem.textContent = remaining;
 }
 
 // ====== Рендер заказа ======
 function renderOrder() {
+  if (!orderListDiv) return;
   orderListDiv.innerHTML = "";
   for (let id in order) {
     let o = order[id];
@@ -96,13 +103,16 @@ function renderOrder() {
     div.innerHTML = `Товар ${parseInt(id)+1} — ${o.collected}/${o.required}`;
     orderListDiv.appendChild(div);
   }
-  document.getElementById("score").textContent = score;
+  const s = document.getElementById("score");
+  if (s) s.textContent = score;
   updateOrderTotals();
 }
 
 // ====== Работа с полкой ======
 function openShelf(index) {
   currentShelfIndex = index;
+  if (!shelfModal || !shelfItemsDiv) return;
+
   shelfItemsDiv.innerHTML = "";
   let shelf = shelves[index];
   for (let i=0;i<TOTAL_ITEMS;i++){
@@ -121,6 +131,7 @@ function openShelf(index) {
 }
 
 function closeShelf() {
+  if (!shelfModal) return;
   shelfModal.classList.add("hidden");
   currentShelfIndex = null;
 }
@@ -135,17 +146,16 @@ function pickItem(itemId){
       o.collected++;
       shelf[itemId]--;
       score += 10;
-      renderOrder(); // включает updateOrderTotals()
+      renderOrder();
       if (o.collected >= o.required) checkOrderComplete();
       return;
     } else {
-      // лишнее игнорируем
-      return;
+      return; // лишнее игнорируем
     }
   } else {
-    // лишний товар — штраф
-    score -= 10;
-    document.getElementById("score").textContent = score;
+    score -= 10; // штраф
+    const s = document.getElementById("score");
+    if (s) s.textContent = score;
   }
 }
 
@@ -164,4 +174,52 @@ function handleKey(e){
     if (e.code==="Space"||e.code==="KeyE"){ closeShelf(); }
     return;
   }
-  if (e.code==="ArrowUp"||e.code==="KeyW"
+  if (e.code==="ArrowUp"||e.code==="KeyW"){ if (player.y>0) player.y--; }
+  if (e.code==="ArrowDown"||e.code==="KeyS"){ if (player.y<ROWS-1) player.y++; }
+  if (e.code==="ArrowLeft"||e.code==="KeyA"){ if (player.x>0) player.x--; }
+  if (e.code==="ArrowRight"||e.code==="KeyD"){ if (player.x<COLS-1) player.x++; }
+  if (e.code==="Space"||e.code==="KeyE"){
+    let index = player.y*COLS+player.x;
+    openShelf(index);
+  }
+}
+
+// ====== Отрисовка ======
+function draw(){
+  let canvas = document.getElementById("gameCanvas");
+  if (!canvas) return;
+  let ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  let w = canvas.width/COLS;
+  let h = canvas.height/ROWS;
+
+  // полки
+  for (let r=0;r<ROWS;r++){
+    for (let c=0;c<COLS;c++){
+      if (player.x===c && player.y===r){
+        ctx.fillStyle = "#1abc9c";
+      } else {
+        ctx.fillStyle = "#2c3e50";
+      }
+      ctx.fillRect(c*w+5, r*h+5, w-10,h-10);
+    }
+  }
+
+  // игрок
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(
+    player.x*w + w/2 - player.size/2,
+    player.y*h + h/2 - player.size/2,
+    player.size, player.size
+  );
+}
+
+// ====== Утилиты ======
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
+function formatTime(t){
+  let m=Math.floor(t/60).toString().padStart(2,"0");
+  let s=(t%60).toString().padStart(2,"0");
+  return m+":"+s;
+}
