@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>WareMover Game</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; background:#222; color:#fff; text-align:center; }
+    .screen { display:none; }
+    .screen.active { display:block; }
+    #gameCanvas { background:#34495e; display:block; margin:20px auto; }
+    button { margin:10px; padding:10px 20px; font-size:16px; cursor:pointer; }
+    #hud { margin-top:10px; }
+    .hidden { display:none; }
+  </style>
 </head>
 <body>
+  <!-- Главное меню -->
   <div id="mainMenu" class="screen active">
     <h1>WareMover</h1>
     <button id="startGameBtn">Начать игру</button>
@@ -13,13 +22,15 @@
     <button id="helpBtn">Помощь</button>
   </div>
 
+  <!-- Выбор режима -->
   <div id="modeSelection" class="screen">
     <h2>Выберите режим</h2>
-    <button id="quickOrderBtn">Быстрый заказ</button>
-    <button id="marathonBtn">Марафон</button>
+    <button id="quickOrderBtn">Quick Order</button>
+    <button id="marathonBtn">Marathon</button>
     <button id="backToMenuBtn">Назад</button>
   </div>
 
+  <!-- Выбор метода комплектования -->
   <div id="pickingMethodSelection" class="screen">
     <h2>Метод комплектования</h2>
     <button id="pickByListBtn">Pick-by-List</button>
@@ -29,33 +40,38 @@
     <button id="backToModeBtn">Назад</button>
   </div>
 
+  <!-- Экран игры -->
   <div id="gameScreen" class="screen">
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="hud">
-      <div>Очки: <span id="score">0</span></div>
-      <div>Время: <span id="time">00:00</span></div>
-      <div>Метод: <span id="currentMethod"></span></div>
-      <div>Выполнено: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
-    </div>
-    <div id="orderPanel">
-      <h3>Заказ</h3>
-      <div id="orderList"></div>
-    </div>
-    <div id="interactionPanel" class="hidden">
-      <div id="interactionContent"></div>
+      Очки: <span id="score">0</span> |
+      Время: <span id="time">00:00</span> |
+      Завершено: <span id="currentItem">0</span>/<span id="totalItems">0</span> |
+      Метод: <span id="currentMethod">-</span>
     </div>
     <button id="pauseBtn">Пауза</button>
+    <div id="interactionPanel" class="hidden"><div id="interactionContent"></div></div>
+    <div id="orderList"></div>
   </div>
 
+  <!-- Экран помощи -->
   <div id="helpScreen" class="screen">
     <h2>Помощь</h2>
-    <p>Управление: WASD или стрелки для движения, E или ПРОБЕЛ для взаимодействия.</p>
+    <p>WASD / стрелки — движение. E или Пробел — взаимодействие.</p>
     <button id="backFromHelpBtn">Назад</button>
   </div>
 
+  <!-- Экран результатов -->
   <div id="resultsScreen" class="screen">
     <h2>Результаты</h2>
     <p id="finalScore">Очки: <span>0</span></p>
     <p id="finalTime">Время: <span>00:00</span></p>
-    <p id="accuracy">Точность: <span>100%</span></p>
-    <p id=
+    <p id="accuracy">Точность: <span>0%</span></p>
+    <p id="ordersCompleted">Заказы: <span>0</span></p>
+    <button id="playAgainBtn">Играть снова</button>
+    <button id="backToMainBtn">В меню</button>
+  </div>
+
+  <script src="game.js?v=5" defer></script>
+</body>
+</html>
