@@ -2,33 +2,60 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Симулятор склада</title>
+  <title>WareMover Game</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Симулятор склада</h1>
-
-  <div id="hud">
-    <div>⏱ Время: <span id="time">00:00</span></div>
-    <div>⭐ Баллы: <span id="score">0</span></div>
+  <div id="mainMenu" class="screen active">
+    <h1>WareMover</h1>
+    <button id="startGameBtn">Начать игру</button>
+    <button id="settingsBtn">Настройки</button>
+    <button id="helpBtn">Помощь</button>
   </div>
 
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
-
-  <div id="orderPanel">
-    <h2>Заказ</h2>
-    <div id="orderList"></div>
+  <div id="modeSelection" class="screen">
+    <h2>Выберите режим</h2>
+    <button id="quickOrderBtn">Быстрый заказ</button>
+    <button id="marathonBtn">Марафон</button>
+    <button id="backToMenuBtn">Назад</button>
   </div>
 
-  <!-- Модальное окно полки -->
-  <div id="shelfModal" class="hidden">
-    <div class="modal-content">
-      <h2>Содержимое полки</h2>
-      <div id="shelfItems" class="shelf-grid"></div>
-      <button id="closeShelfBtn">Закрыть (E/Space)</button>
+  <div id="pickingMethodSelection" class="screen">
+    <h2>Метод комплектования</h2>
+    <button id="pickByListBtn">Pick-by-List</button>
+    <button id="pickByVoiceBtn">Pick-by-Voice</button>
+    <button id="pickByLightBtn">Pick-by-Light</button>
+    <button id="pickByVisionBtn">Pick-by-Vision</button>
+    <button id="backToModeBtn">Назад</button>
+  </div>
+
+  <div id="gameScreen" class="screen">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="hud">
+      <div>Очки: <span id="score">0</span></div>
+      <div>Время: <span id="time">00:00</span></div>
+      <div>Метод: <span id="currentMethod"></span></div>
+      <div>Выполнено: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
     </div>
+    <div id="orderPanel">
+      <h3>Заказ</h3>
+      <div id="orderList"></div>
+    </div>
+    <div id="interactionPanel" class="hidden">
+      <div id="interactionContent"></div>
+    </div>
+    <button id="pauseBtn">Пауза</button>
   </div>
 
-  <script src="game.js"></script>
-</body>
-</html>
+  <div id="helpScreen" class="screen">
+    <h2>Помощь</h2>
+    <p>Управление: WASD или стрелки для движения, E или ПРОБЕЛ для взаимодействия.</p>
+    <button id="backFromHelpBtn">Назад</button>
+  </div>
+
+  <div id="resultsScreen" class="screen">
+    <h2>Результаты</h2>
+    <p id="finalScore">Очки: <span>0</span></p>
+    <p id="finalTime">Время: <span>00:00</span></p>
+    <p id="accuracy">Точность: <span>100%</span></p>
+    <p id=
