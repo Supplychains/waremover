@@ -1,5 +1,17 @@
 // Основной класс игры WareMover
 class WareMoverGame {
+    // Безопасные хелперы для привязки событий
+    getElByIdSafe(id) {
+        const el = document.getElementById(id);
+        if (!el) { console.warn('[WareMover] Элемент не найден:', id); }
+        return el;
+        } catch (err) { console.error('[WareMover] Ошибка setupEventListeners:', err); }
+    }
+    onClick(id, handler) {
+        const el = this.getElByIdSafe(id);
+        if (el) el.addEventListener('click', handler);
+    }
+
     constructor() {
         this.canvas = null;
         this.ctx = null;
@@ -51,76 +63,77 @@ class WareMoverGame {
     }
     
     setupEventListeners() {
+        try {
         // Кнопки меню
-        document.getElementById('startGameBtn').addEventListener('click', () => {
+        this.onClick('startGameBtn', () => {
             this.showScreen('modeSelection');
         });
         
-        document.getElementById('settingsBtn').addEventListener('click', () => {
+        this.onClick('settingsBtn', () => {
             // TODO: Реализовать настройки
             alert('Настройки будут добавлены в следующей версии');
         });
         
-        document.getElementById('helpBtn').addEventListener('click', () => {
+        this.onClick('helpBtn', () => {
             this.showScreen('helpScreen');
         });
         
         // Выбор режима
-        document.getElementById('quickOrderBtn').addEventListener('click', () => {
+        this.onClick('quickOrderBtn', () => {
             this.gameMode = 'quickOrder';
             this.showScreen('pickingMethodSelection');
         });
         
-        document.getElementById('marathonBtn').addEventListener('click', () => {
+        this.onClick('marathonBtn', () => {
             this.gameMode = 'marathon';
             this.showScreen('pickingMethodSelection');
         });
         
         // Выбор метода комплектования
-        document.getElementById('pickByListBtn').addEventListener('click', () => {
+        this.onClick('pickByListBtn', () => {
             this.pickingMethod = 'pickByList';
             this.startGame();
         });
         
-        document.getElementById('pickByVoiceBtn').addEventListener('click', () => {
+        this.onClick('pickByVoiceBtn', () => {
             this.pickingMethod = 'pickByVoice';
             this.startGame();
         });
         
-        document.getElementById('pickByLightBtn').addEventListener('click', () => {
+        this.onClick('pickByLightBtn', () => {
             this.pickingMethod = 'pickByLight';
             this.startGame();
         });
         
-        document.getElementById('pickByVisionBtn').addEventListener('click', () => {
+        this.onClick('pickByVisionBtn', () => {
             this.pickingMethod = 'pickByVision';
             this.startGame();
         });
         
         // Кнопки "Назад"
-        document.getElementById('backToMenuBtn').addEventListener('click', () => {
+        this.onClick('backToMenuBtn', () => {
             this.showScreen('mainMenu');
         });
         
-        document.getElementById('backToModeBtn').addEventListener('click', () => {
+        this.onClick('backToModeBtn', () => {
             this.showScreen('modeSelection');
         });
         
-        document.getElementById('backFromHelpBtn').addEventListener('click', () => {
+        this.onClick('backFromHelpBtn', () => {
             this.showScreen('mainMenu');
         });
         
         // Результаты
-        document.getElementById('playAgainBtn').addEventListener('click', () => {
+        this.onClick('playAgainBtn', () => {
             this.showScreen('modeSelection');
         });
         
-        document.getElementById('backToMainBtn').addEventListener('click', () => {
+        this.onClick('backToMainBtn', () => {
             this.showScreen('mainMenu');
         });
         
         // Пауза
-        document.getElementById('pauseBtn').addEventListener('click', () => {
+        this.onClick('pauseBtn', () => {
             this.togglePause();
         });
         
