@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>WareMover Game</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <!-- Главное меню -->
@@ -30,7 +31,7 @@
     </div>
   </section>
 
-  <!-- Выбор метода комплектования -->
+  <!-- Выбор метода -->
   <section id="pickingMethodSelection" class="screen">
     <div class="panel">
       <h2>Метод комплектования</h2>
@@ -44,12 +45,11 @@
     </div>
   </section>
 
-  <!-- Экран игры -->
+  <!-- Игровой экран -->
   <section id="gameScreen" class="screen">
     <div id="stage">
       <canvas id="gameCanvas"></canvas>
 
-      <!-- HUD -->
       <div id="hud">
         <div class="hud-grid">
           <div>Очки: <span id="score">0</span></div>
@@ -63,12 +63,10 @@
         </div>
       </div>
 
-      <!-- Панель взаимодействия -->
       <div id="interactionPanel" class="hidden">
         <div id="interactionContent"></div>
       </div>
 
-      <!-- Панель заказа (справа) -->
       <aside id="orderPanel">
         <h3>Текущий заказ</h3>
         <div id="orderList"></div>
@@ -76,20 +74,16 @@
     </div>
   </section>
 
-  <!-- Экран помощи -->
+  <!-- Помощь -->
   <section id="helpScreen" class="screen">
     <div class="panel">
       <h2>Помощь</h2>
-      <p>
-        Движение: WASD / ↑↓←→<br />
-        Взаимодействие: E / Пробел (открыть/закрыть полку)<br />
-        ЛКМ — взять 1 шт., ПКМ — вернуть 1 шт.
-      </p>
+      <p>WASD/стрелки — движение • E/Пробел — открыть/закрыть полку • ЛКМ — взять • ПКМ — вернуть</p>
       <button id="backFromHelpBtn" class="secondary">Назад</button>
     </div>
   </section>
 
-  <!-- Экран результатов -->
+  <!-- Результаты -->
   <section id="resultsScreen" class="screen">
     <div class="panel">
       <h2>Результаты</h2>
@@ -104,6 +98,7 @@
     </div>
   </section>
 
-  <script src="game.js"></script>
+  <!-- defer + кэш-бастинг -->
+  <script src="game.js?v=2" defer></script>
 </body>
 </html>
