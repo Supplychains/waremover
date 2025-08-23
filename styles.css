@@ -1,3 +1,4 @@
+* { box-sizing: border-box; }
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -6,43 +7,48 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 
-.screen {
-  display: none;
-  text-align: center;
-}
-
-.screen.active {
-  display: block;
-}
+.screen { display: none; text-align: center; width: 100%; }
+.screen.active { display: block; }
 
 button {
-  margin: 10px;
-  padding: 10px 20px;
+  margin: 8px;
+  padding: 10px 18px;
   font-size: 16px;
   cursor: pointer;
+  border: none;
+  border-radius: 6px;
 }
 
-#gameScreen {
+#stage {
   position: relative;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
 }
 
 #gameCanvas {
   border: 2px solid #fff;
   background: #34495e;
+  display: block;
 }
 
+/* HUD поверх канваса */
 #hud {
   position: absolute;
   top: 10px;
   left: 10px;
   background: rgba(0,0,0,0.5);
-  padding: 10px;
-  border-radius: 5px;
+  padding: 10px 12px;
+  border-radius: 6px;
   font-size: 14px;
 }
+#hud .hud-buttons { margin-top: 6px; display: flex; gap: 6px; }
 
 #interactionPanel {
   position: absolute;
@@ -54,38 +60,31 @@ button {
   padding: 8px 15px;
   border-radius: 5px;
 }
+.hidden { display: none; }
 
-.hidden {
-  display: none;
-}
-
+/* Панель заказа справа от канваса */
 #orderPanel {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  background: rgba(0,0,0,0.6);
+  position: relative;
+  min-width: 260px;
+  background: rgba(0,0,0,0.35);
   padding: 10px;
-  border-radius: 5px;
-  width: 200px;
-  font-size: 13px;
+  border-radius: 6px;
   text-align: left;
 }
+#orderPanel h3 { margin: 0 0 8px; }
 
 .order-item {
   margin: 5px 0;
-  padding: 5px;
+  padding: 6px 8px;
   background: #ecf0f1;
   color: black;
-  border-radius: 3px;
+  border-radius: 4px;
   display: flex;
   justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
 }
+.order-item.current { background: #f1c40f; }
+.order-item.completed { background: #2ecc71; color: white; }
 
-.order-item.current {
-  background: #f1c40f;
-}
-
-.order-item.completed {
-  background: #2ecc71;
-  color: white;
-}
+.results-buttons { display: flex; justify-content: center; gap: 10px; }
