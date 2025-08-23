@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>WareMover Game</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Главное меню -->
@@ -34,31 +34,43 @@
 
   <!-- Экран игры -->
   <div id="gameScreen" class="screen">
-    <canvas id="gameCanvas"></canvas>
-    <div id="hud">
-      <div>Очки: <span id="score">0</span></div>
-      <div>Время: <span id="time">00:00</span></div>
-      <div>Метод: <span id="currentMethod"></span></div>
-      <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
-      <button id="pauseBtn">⏸ Пауза</button>
-    </div>
+    <div id="stage">
+      <canvas id="gameCanvas"></canvas>
 
-    <!-- Панель взаимодействия -->
-    <div id="interactionPanel" class="hidden">
-      <div id="interactionContent"></div>
-    </div>
+      <!-- HUD -->
+      <div id="hud">
+        <div>Очки: <span id="score">0</span></div>
+        <div>Время: <span id="time">00:00</span></div>
+        <div>Метод: <span id="currentMethod"></span></div>
+        <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
+        <div class="hud-buttons">
+          <button id="pauseBtn">⏸ Пауза</button>
+          <button id="exitToMenuBtn">🏠 В меню</button>
+        </div>
+      </div>
 
-    <!-- Панель заказа -->
-    <div id="orderPanel">
-      <h3>Текущий заказ</h3>
-      <div id="orderList"></div>
+      <!-- Панель взаимодействия -->
+      <div id="interactionPanel" class="hidden">
+        <div id="interactionContent"></div>
+      </div>
+
+      <!-- Панель заказа (справа) -->
+      <aside id="orderPanel">
+        <h3>Текущий заказ</h3>
+        <div id="orderList"></div>
+      </aside>
     </div>
   </div>
 
   <!-- Экран помощи -->
   <div id="helpScreen" class="screen">
     <h2>Помощь</h2>
-    <p>WASD / стрелки — движение<br>E / Пробел — взаимодействие<br>ПКМ — вернуть товар</p>
+    <p>
+      WASD / стрелки — движение<br />
+      E / Пробел — взаимодействие (открыть/закрыть полку)<br />
+      ЛКМ — взять 1 шт.<br />
+      ПКМ — вернуть 1 шт.
+    </p>
     <button id="backFromHelpBtn">Назад</button>
   </div>
 
@@ -69,8 +81,10 @@
     <p>Время: <span id="finalTime"><span>00:00</span></span></p>
     <p>Точность: <span id="accuracy"><span>100%</span></span></p>
     <p>Заказы: <span id="ordersCompleted"><span>0</span></span></p>
-    <button id="playAgainBtn">Играть снова</button>
-    <button id="backToMainBtn">Главное меню</button>
+    <div class="results-buttons">
+      <button id="playAgainBtn">Играть снова</button>
+      <button id="backToMainBtn">Главное меню</button>
+    </div>
   </div>
 
   <script src="game.js"></script>
