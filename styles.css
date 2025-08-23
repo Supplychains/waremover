@@ -1,15 +1,19 @@
 body {
   margin: 0;
+  font-family: Arial, sans-serif;
   background: #2c3e50;
   color: white;
-  font-family: Arial, sans-serif;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
 .screen {
   display: none;
-  padding: 20px;
+  text-align: center;
 }
+
 .screen.active {
   display: block;
 }
@@ -17,15 +21,17 @@ body {
 button {
   margin: 10px;
   padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  background: #3498db;
-  color: white;
-  cursor: pointer;
   font-size: 16px;
+  cursor: pointer;
 }
-button:hover {
-  background: #2980b9;
+
+#gameScreen {
+  position: relative;
+}
+
+#gameCanvas {
+  border: 2px solid #fff;
+  background: #34495e;
 }
 
 #hud {
@@ -34,69 +40,52 @@ button:hover {
   left: 10px;
   background: rgba(0,0,0,0.5);
   padding: 10px;
-  border-radius: 6px;
+  border-radius: 5px;
+  font-size: 14px;
 }
-
-#orderPanel {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 200px;
-  background: rgba(255,255,255,0.1);
-  padding: 10px;
-  border-radius: 6px;
-  text-align: left;
-}
-
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  margin: 2px 0;
-}
-.order-item.completed { color: #2ecc71; }
-.order-item.current { color: #f39c12; }
 
 #interactionPanel {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
+  background: rgba(241, 196, 15, 0.9);
+  color: black;
+  padding: 8px 15px;
+  border-radius: 5px;
+}
+
+.hidden {
+  display: none;
+}
+
+#orderPanel {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: rgba(0,0,0,0.6);
   padding: 10px;
-  border-radius: 6px;
-}
-.hidden { display: none; }
-
-canvas {
-  border: 2px solid #fff;
-  background: #34495e;
-  margin-top: 20px;
+  border-radius: 5px;
+  width: 200px;
+  font-size: 13px;
+  text-align: left;
 }
 
-h1, h2, h3 {
-  margin: 10px 0;
-}
-
-p {
+.order-item {
   margin: 5px 0;
+  padding: 5px;
+  background: #ecf0f1;
+  color: black;
+  border-radius: 3px;
+  display: flex;
+  justify-content: space-between;
 }
 
-#resultsScreen p {
-  font-size: 18px;
+.order-item.current {
+  background: #f1c40f;
 }
 
-/* Дополнительные стили для HUD и заказов */
-#hud div {
-  margin: 4px 0;
+.order-item.completed {
+  background: #2ecc71;
+  color: white;
 }
-
-#orderList {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-/* Цвета */
-#finalScore span { color: #f39c12; }
-#finalTime span { color: #1abc9c; }
-#accuracy span { color: #9b59b6; }
-#ordersCompleted span { color: #2ecc71; }
