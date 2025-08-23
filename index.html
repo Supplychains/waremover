@@ -7,44 +7,58 @@
 </head>
 <body>
   <!-- Главное меню -->
-  <div id="mainMenu" class="screen active">
-    <h1>WareMover</h1>
-    <button id="startGameBtn">Начать игру</button>
-    <button id="settingsBtn">Настройки</button>
-    <button id="helpBtn">Помощь</button>
-  </div>
+  <section id="mainMenu" class="screen active">
+    <div class="panel">
+      <h1>WareMover</h1>
+      <div class="btn-row">
+        <button id="startGameBtn">Начать игру</button>
+        <button id="settingsBtn" class="secondary">Настройки</button>
+        <button id="helpBtn" class="secondary">Помощь</button>
+      </div>
+    </div>
+  </section>
 
   <!-- Выбор режима -->
-  <div id="modeSelection" class="screen">
-    <h2>Выбор режима</h2>
-    <button id="quickOrderBtn">Быстрый заказ</button>
-    <button id="marathonBtn">Марафон</button>
-    <button id="backToMenuBtn">Назад</button>
-  </div>
+  <section id="modeSelection" class="screen">
+    <div class="panel">
+      <h2>Выбор режима</h2>
+      <div class="btn-row">
+        <button id="quickOrderBtn">Быстрый заказ</button>
+        <button id="marathonBtn">Марафон</button>
+      </div>
+      <button id="backToMenuBtn" class="secondary">Назад</button>
+    </div>
+  </section>
 
   <!-- Выбор метода комплектования -->
-  <div id="pickingMethodSelection" class="screen">
-    <h2>Метод комплектования</h2>
-    <button id="pickByListBtn">Pick-by-List</button>
-    <button id="pickByVoiceBtn">Pick-by-Voice</button>
-    <button id="pickByLightBtn">Pick-by-Light</button>
-    <button id="pickByVisionBtn">Pick-by-Vision</button>
-    <button id="backToModeBtn">Назад</button>
-  </div>
+  <section id="pickingMethodSelection" class="screen">
+    <div class="panel">
+      <h2>Метод комплектования</h2>
+      <div class="btn-row wrap">
+        <button id="pickByListBtn">Pick-by-List</button>
+        <button id="pickByVoiceBtn">Pick-by-Voice</button>
+        <button id="pickByLightBtn">Pick-by-Light</button>
+        <button id="pickByVisionBtn">Pick-by-Vision</button>
+      </div>
+      <button id="backToModeBtn" class="secondary">Назад</button>
+    </div>
+  </section>
 
   <!-- Экран игры -->
-  <div id="gameScreen" class="screen">
+  <section id="gameScreen" class="screen">
     <div id="stage">
       <canvas id="gameCanvas"></canvas>
 
       <!-- HUD -->
       <div id="hud">
-        <div>Очки: <span id="score">0</span></div>
-        <div>Время: <span id="time">00:00</span></div>
-        <div>Метод: <span id="currentMethod"></span></div>
-        <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
+        <div class="hud-grid">
+          <div>Очки: <span id="score">0</span></div>
+          <div>Время: <span id="time">00:00</span></div>
+          <div>Метод: <span id="currentMethod"></span></div>
+          <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
+        </div>
         <div class="hud-buttons">
-          <button id="pauseBtn">⏸ Пауза</button>
+          <button id="pauseBtn" class="secondary">⏸ Пауза</button>
           <button id="exitToMenuBtn">🏠 В меню</button>
         </div>
       </div>
@@ -60,32 +74,35 @@
         <div id="orderList"></div>
       </aside>
     </div>
-  </div>
+  </section>
 
   <!-- Экран помощи -->
-  <div id="helpScreen" class="screen">
-    <h2>Помощь</h2>
-    <p>
-      WASD / стрелки — движение<br />
-      E / Пробел — взаимодействие (открыть/закрыть полку)<br />
-      ЛКМ — взять 1 шт.<br />
-      ПКМ — вернуть 1 шт.
-    </p>
-    <button id="backFromHelpBtn">Назад</button>
-  </div>
+  <section id="helpScreen" class="screen">
+    <div class="panel">
+      <h2>Помощь</h2>
+      <p>
+        Движение: WASD / ↑↓←→<br />
+        Взаимодействие: E / Пробел (открыть/закрыть полку)<br />
+        ЛКМ — взять 1 шт., ПКМ — вернуть 1 шт.
+      </p>
+      <button id="backFromHelpBtn" class="secondary">Назад</button>
+    </div>
+  </section>
 
   <!-- Экран результатов -->
-  <div id="resultsScreen" class="screen">
-    <h2>Результаты</h2>
-    <p>Очки: <span id="finalScore"><span>0</span></span></p>
-    <p>Время: <span id="finalTime"><span>00:00</span></span></p>
-    <p>Точность: <span id="accuracy"><span>100%</span></span></p>
-    <p>Заказы: <span id="ordersCompleted"><span>0</span></span></p>
-    <div class="results-buttons">
-      <button id="playAgainBtn">Играть снова</button>
-      <button id="backToMainBtn">Главное меню</button>
+  <section id="resultsScreen" class="screen">
+    <div class="panel">
+      <h2>Результаты</h2>
+      <p>Очки: <span id="finalScore"><span>0</span></span></p>
+      <p>Время: <span id="finalTime"><span>00:00</span></span></p>
+      <p>Точность: <span id="accuracy"><span>100%</span></span></p>
+      <p>Заказы: <span id="ordersCompleted"><span>0</span></span></p>
+      <div class="btn-row">
+        <button id="playAgainBtn">Играть снова</button>
+        <button id="backToMainBtn" class="secondary">Главное меню</button>
+      </div>
     </div>
-  </div>
+  </section>
 
   <script src="game.js"></script>
 </body>
