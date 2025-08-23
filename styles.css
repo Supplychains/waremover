@@ -1,100 +1,38 @@
-/* Общие */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #1f2d3a; /* запасной фон */
-  color: #fff;
-  overflow: hidden; /* чтобы пробел не скроллил */
-}
+/* базовое */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:Arial,Segoe UI,system-ui;background:#1f2d3a;color:#fff;overflow:hidden}
 
-/* Экраны */
-.screen{
-  position:absolute; inset:0;
-  display:none;
-  background:#2c3e50;
-}
-.screen.active{ display:block; }
+/* экраны: виден только активный */
+.screen{position:absolute;inset:0;display:none;background:#2c3e50}
+.screen.active{display:block}
 
-/* Центрированные панели для меню/хелпа/результатов */
-.panel{
-  position:absolute; inset:0;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  gap:14px; padding:20px;
-}
-h1,h2{ margin:0 0 8px 0; }
-.btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
-.btn-row.wrap{ flex-wrap:wrap; }
+/* панели меню */
+.panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+h1,h2{margin:0 0 8px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+button{padding:12px 18px;font-size:16px;border:none;border-radius:8px;background:#3498db;color:#fff;cursor:pointer;transition:transform .05s,background .2s}
+button:hover{background:#2d89c6}
+button:active{transform:translateY(1px)}
+button.secondary{background:#5d6d7e}
+button.secondary:hover{background:#4f5d6c}
 
-/* Кнопки */
-button{
-  padding:12px 18px; font-size:16px;
-  border:none; border-radius:8px;
-  background:#3498db; color:#fff; cursor:pointer;
-  transition:transform .05s ease, background .2s ease;
-}
-button:hover{ background:#2d89c6; }
-button:active{ transform:translateY(1px); }
-button.secondary{ background:#5d6d7e; }
-button.secondary:hover{ background:#4f5d6c; }
+/* сцена игры: канвас + боковая колонка */
+#stage{position:absolute;inset:0;display:grid;grid-template-columns:1fr 280px;gap:12px;align-items:start;padding:16px}
+#gameCanvas{width:100%;height:100%;max-height:calc(100vh - 32px);border:2px solid #fff;background:#34495e}
 
-/* Сцена игры */
-#stage{
-  position:absolute; inset:0;
-  display:grid;
-  grid-template-columns: 1fr 280px;
-  gap:12px;
-  align-items:start;
-  padding:16px;
-}
-#gameCanvas{
-  width: 100%;
-  height: 100%;
-  max-height: calc(100vh - 32px);
-  border:2px solid #fff;
-  background:#34495e;
-}
+/* HUD */
+#hud{position:absolute;top:24px;left:24px;background:rgba(0,0,0,.5);padding:10px 12px;border-radius:10px;font-size:14px;min-width:260px}
+#hud .hud-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+#hud .hud-buttons{margin-top:8px;display:flex;gap:8px}
 
-/* HUD поверх канваса (внутри первой колонки) */
-#hud{
-  position:absolute; top:24px; left:24px;
-  background: rgba(0,0,0,.5);
-  padding:10px 12px; border-radius:10px;
-  font-size:14px; min-width:260px;
-}
-#hud .hud-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:6px 12px;
-}
-#hud .hud-buttons{ margin-top:8px; display:flex; gap:8px; }
+/* взаимодействие */
+#interactionPanel{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(241,196,15,.95);color:#1b1b1b;padding:8px 14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.hidden{display:none}
 
-/* Панель взаимодействия */
-#interactionPanel{
-  position:absolute; bottom:24px; left:50%;
-  transform:translateX(-50%);
-  background: rgba(241,196,15,.95);
-  color:#1b1b1b; padding:8px 14px;
-  border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.3);
-}
-.hidden{ display:none; }
-
-/* Заказ справа */
-#orderPanel{
-  grid-column: 2 / 3;
-  align-self:start;
-  background: rgba(0,0,0,.35);
-  padding:12px; border-radius:10px;
-  min-height: 280px;
-  max-height: calc(100vh - 32px);
-  overflow:auto;
-}
-#orderPanel h3{ margin:0 0 8px 0; }
-.order-item{
-  display:flex; justify-content:space-between; gap:8px;
-  background:#ecf0f1; color:#1b1b1b;
-  border-radius:6px; padding:6px 8px; margin:6px 0;
-  font-size:13px;
-}
-.order-item.current{ background:#f1c40f; }
-.order-item.completed{ background:#2ecc71; color:#fff; }
+/* заказ справа */
+#orderPanel{grid-column:2/3;align-self:start;background:rgba(0,0,0,.35);padding:12px;border-radius:10px;min-height:280px;max-height:calc(100vh - 32px);overflow:auto}
+#orderPanel h3{margin:0 0 8px}
+.order-item{display:flex;justify-content:space-between;gap:8px;background:#ecf0f1;color:#1b1b1b;border-radius:6px;padding:6px 8px;margin:6px 0;font-size:13px}
+.order-item.current{background:#f1c40f}
+.order-item.completed{background:#2ecc71;color:#fff}
