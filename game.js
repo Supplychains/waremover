@@ -22,11 +22,7 @@ class WareMoverGame {
 
     // Игрок
     this.player = {
-      x: 100,
-      y: 100,
-      width: 32,
-      height: 32,
-      speed: 3
+      x: 100, y: 100, width: 32, height: 32, speed: 3
     };
 
     // Склад
@@ -71,11 +67,9 @@ class WareMoverGame {
     this.getEl('startGameBtn')?.addEventListener('click', () => {
       this.showScreen('modeSelection');
     });
-
     this.getEl('settingsBtn')?.addEventListener('click', () => {
       alert('Настройки будут добавлены в следующей версии');
     });
-
     this.getEl('helpBtn')?.addEventListener('click', () => {
       this.showScreen('helpScreen');
     });
@@ -85,7 +79,6 @@ class WareMoverGame {
       this.gameMode = 'quickOrder';
       this.showScreen('pickingMethodSelection');
     });
-
     this.getEl('marathonBtn')?.addEventListener('click', () => {
       this.gameMode = 'marathon';
       this.showScreen('pickingMethodSelection');
@@ -94,20 +87,16 @@ class WareMoverGame {
     // Выбор метода комплектования
     this.getEl('pickByListBtn')?.addEventListener('click', () => {
       this.pickingMethod = 'pickByList';
-      console.log('[WareMover] Pick-by-List clicked → startGame');
       this.startGame();
     });
-
     this.getEl('pickByVoiceBtn')?.addEventListener('click', () => {
       this.pickingMethod = 'pickByVoice';
       this.startGame();
     });
-
     this.getEl('pickByLightBtn')?.addEventListener('click', () => {
       this.pickingMethod = 'pickByLight';
       this.startGame();
     });
-
     this.getEl('pickByVisionBtn')?.addEventListener('click', () => {
       this.pickingMethod = 'pickByVision';
       this.startGame();
@@ -117,11 +106,9 @@ class WareMoverGame {
     this.getEl('backToMenuBtn')?.addEventListener('click', () => {
       this.showScreen('mainMenu');
     });
-
     this.getEl('backToModeBtn')?.addEventListener('click', () => {
       this.showScreen('modeSelection');
     });
-
     this.getEl('backFromHelpBtn')?.addEventListener('click', () => {
       this.showScreen('mainMenu');
     });
@@ -130,24 +117,29 @@ class WareMoverGame {
     this.getEl('playAgainBtn')?.addEventListener('click', () => {
       this.showScreen('modeSelection');
     });
-
     this.getEl('backToMainBtn')?.addEventListener('click', () => {
       this.showScreen('mainMenu');
     });
 
-    // Пауза
+    // Пауза и выход
     this.getEl('pauseBtn')?.addEventListener('click', () => {
       this.togglePause();
+    });
+    this.getEl('exitToMenuBtn')?.addEventListener('click', () => {
+      this.gameState = 'menu';
+      this.showScreen('mainMenu');
     });
 
     // Клавиатура
     document.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;
 
+      // Взаимодействие в игре
       if ((e.code === 'KeyE' || e.code === 'Space') && this.gameState === 'playing') {
         this.handleInteraction();
       }
 
+      // Пауза
       if (e.code === 'Escape' && this.gameState === 'playing') {
         this.togglePause();
       }
@@ -187,12 +179,12 @@ class WareMoverGame {
     this.getEl(screenId)?.classList.add('active');
 
     if (screenId === 'gameScreen') {
+      // Подготовка канваса
       this.canvas = this.getEl('gameCanvas');
       if (!this.canvas) {
         console.error('[WareMover] Не найден canvas #gameCanvas');
         return;
       }
-      // Подгоняем размер канвы под склад
       this.canvas.width = this.warehouse.width;
       this.canvas.height = this.warehouse.height;
 
@@ -220,23 +212,24 @@ class WareMoverGame {
     ];
   }
 
+  // Генерим 12 SKU на полке (SKU = 1..12). Кол-во 0..4.
   generateShelfItems() {
-    const itemTypes = ['box', 'bottle', 'folder', 'package', 'container'];
     const items = [];
-    for (let i = 0; i < 12; i++) {
+    for (let pos = 0; pos < 12; pos++) {
+      const sku = pos + 1; // 1..12
       items.push({
         id: `item_${Math.random().toString(36).slice(2, 11)}`,
-        type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
-        name: `Товар ${i + 1}`,
+        sku,                        // ключевая связка заказа и полок
+        name: `Товар ${sku}`,
         quantity: Math.floor(Math.random() * 5), // 0..4
-        position: i
+        position: pos
       });
     }
     return items;
   }
 
   // ----------------------------
-  // Генерация заказа
+  // Генерация заказа: 8 уникальных SKU из 1..12
   // ----------------------------
   generateOrder() {
     const order = {
@@ -246,40 +239,31 @@ class WareMoverGame {
       completedItems: 0
     };
 
-    // Соберём все товары по полкам
-    const allItems = [];
-    this.warehouse.shelves.forEach((shelf, shelfIndex) => {
-      shelf.items.forEach(item => {
-        allItems.push({ ...item, shelfIndex });
-      });
-    });
-
-    // Выбираем 8 уникальных позиций, каждая с требуемым количеством 9..12
-    const selectedPositions = [];
-    const available = [...allItems];
-
-    while (selectedPositions.length < 8 && available.length > 0) {
-      const idx = Math.floor(Math.random() * available.length);
-      const picked = available.splice(idx, 1)[0];
-
-      selectedPositions.push({
-        ...picked,
-        requiredQuantity: Math.floor(Math.random() * 4) + 9, // 9..12
-        pickedQuantity: 0,
-        completed: false
-      });
+    // Выберем 8 уникальных SKU
+    const allSkus = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
+    // Перемешаем
+    for (let i = allSkus.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allSkus[i], allSkus[j]] = [allSkus[j], allSkus[i]];
     }
+    const chosen = allSkus.slice(0, 8);
 
-    order.items = selectedPositions;
-    order.totalItems = selectedPositions.reduce((sum, it) => sum + it.requiredQuantity, 0);
-    return order; // ВАЖНО!
+    order.items = chosen.map(sku => ({
+      sku, // связь по SKU
+      name: `Товар ${sku}`,
+      requiredQuantity: Math.floor(Math.random() * 4) + 9, // 9..12
+      pickedQuantity: 0,
+      completed: false
+    }));
+
+    order.totalItems = order.items.reduce((s, it) => s + it.requiredQuantity, 0);
+    return order;
   }
 
   // ----------------------------
   // Запуск/цикл
   // ----------------------------
   startGame() {
-    console.log('[WareMover] startGame');
     this.score = 0;
     this.startTime = Date.now();
     this.gameTime = 0;
@@ -287,7 +271,6 @@ class WareMoverGame {
     this.totalErrors = 0;
 
     this.currentOrder = this.generateOrder();
-    console.log('[WareMover] generated order:', this.currentOrder);
 
     // Сброс позиции игрока
     this.player.x = 100;
@@ -296,15 +279,12 @@ class WareMoverGame {
     this.updateHUD();
     this.updateOrderPanel();
     this.showScreen('gameScreen');
-    console.log('[WareMover] game screen shown');
   }
 
   gameLoop() {
     if (this.gameState !== 'playing') return;
-
     this.update();
     this.render();
-
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -333,7 +313,6 @@ class WareMoverGame {
 
   updatePlayer() {
     if (this.inShelfView) return;
-
     let dx = 0, dy = 0;
 
     if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= this.player.speed;
@@ -344,12 +323,8 @@ class WareMoverGame {
     const newX = this.player.x + dx;
     const newY = this.player.y + dy;
 
-    if (newX >= 0 && newX + this.player.width <= this.warehouse.width) {
-      this.player.x = newX;
-    }
-    if (newY >= 0 && newY + this.player.height <= this.warehouse.height) {
-      this.player.y = newY;
-    }
+    if (newX >= 0 && newX + this.player.width <= this.warehouse.width) this.player.x = newX;
+    if (newY >= 0 && newY + this.player.height <= this.warehouse.height) this.player.y = newY;
   }
 
   // ----------------------------
@@ -387,7 +362,6 @@ class WareMoverGame {
     const c1y = obj1.y + obj1.height / 2;
     const c2x = obj2.x + obj2.width / 2;
     const c2y = obj2.y + obj2.height / 2;
-
     const dist = Math.hypot(c2x - c1x, c2y - c1y);
     return dist < distance;
   }
@@ -397,9 +371,9 @@ class WareMoverGame {
     if (!content) return;
 
     if (this.nearInteractable === 'computer') {
-      content.innerHTML = '<p>Нажмите E, чтобы получить/просмотреть заказ</p>';
+      content.innerHTML = '<p>Нажмите E/Пробел, чтобы получить/просмотреть заказ</p>';
     } else if (this.nearInteractable && this.nearInteractable.type === 'shelf') {
-      content.innerHTML = '<p>Нажмите E, чтобы просмотреть стеллаж</p>';
+      content.innerHTML = '<p>Нажмите E/Пробел, чтобы открыть стеллаж</p>';
     } else {
       content.innerHTML = '';
     }
@@ -409,15 +383,18 @@ class WareMoverGame {
     if (this.nearInteractable === 'computer') {
       this.showOrderInfo();
     } else if (this.nearInteractable && this.nearInteractable.type === 'shelf') {
-      this.enterShelfView(this.nearInteractable.index);
+      // Переключатель: если уже открыта полка — закрыть
+      if (this.inShelfView) {
+        this.exitShelfView();
+      } else {
+        this.enterShelfView(this.nearInteractable.index);
+      }
     }
   }
 
   showOrderInfo() {
     this.updateOrderPanel();
-    if (this.pickingMethod === 'pickByVoice') {
-      this.speakOrderInfo();
-    }
+    if (this.pickingMethod === 'pickByVoice') this.speakOrderInfo();
   }
 
   speakOrderInfo() {
@@ -449,9 +426,8 @@ class WareMoverGame {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Проверка клика по кнопке "Выход"
-    if (x >= this.warehouse.width - 100 && x <= this.warehouse.width - 20 &&
-        y >= 20 && y <= 50) {
+    // Кнопка "Выход (E)"
+    if (x >= this.warehouse.width - 100 && x <= this.warehouse.width - 20 && y >= 20 && y <= 50) {
       this.exitShelfView();
       return;
     }
@@ -490,52 +466,61 @@ class WareMoverGame {
     return -1;
   }
 
-  pickItem(item) {
+  // --- ПОДБОР ПО SKU (а не по id!) ---
+  pickItem(shelfItem) {
     if (!this.currentOrder) return;
 
-    const orderItem = this.currentOrder.items.find(oi => oi.id === item.id);
+    // Найдём позицию в заказе по SKU
+    const orderItem = this.currentOrder.items.find(oi => oi.sku === shelfItem.sku);
 
-    if (orderItem && !orderItem.completed) {
-      if (orderItem.pickedQuantity < orderItem.requiredQuantity) {
-        // Нельзя забирать со стеллажа меньше 0
-        if (item.quantity > 0) {
-          orderItem.pickedQuantity++;
-          item.quantity--;
-          this.score += 10;
-
-          if (orderItem.pickedQuantity >= orderItem.requiredQuantity) {
-            orderItem.completed = true;
-            this.score += 50; // бонус за закрытие позиции
-          }
-        } else {
-          // Ошибка — полка пустая
-          this.totalErrors++;
-          this.score -= 3;
-        }
-      } else {
-        // Взяли больше, чем нужно
-        this.totalErrors++;
-        this.score -= 5;
-      }
-    } else {
-      // Не тот товар
+    if (!orderItem) {
+      // Этот SKU не в заказе
       this.totalErrors++;
       this.score -= 10;
+      this.updateOrderPanel();
+      this.updateHUD();
+      return;
+    }
+
+    if (orderItem.completed) {
+      // Уже выполнен — лишний набор
+      this.totalErrors++;
+      this.score -= 5;
+      this.updateHUD();
+      return;
+    }
+
+    if (shelfItem.quantity <= 0) {
+      // Полка пустая
+      this.totalErrors++;
+      this.score -= 3;
+      this.updateHUD();
+      return;
+    }
+
+    // Берём 1 шт за клик
+    shelfItem.quantity -= 1;
+    orderItem.pickedQuantity += 1;
+    this.score += 10;
+
+    if (orderItem.pickedQuantity >= orderItem.requiredQuantity) {
+      orderItem.completed = true;
+      this.score += 50; // бонус за закрытие позиции
     }
 
     this.updateOrderPanel();
     this.updateHUD();
   }
 
-  returnItem(item) {
+  returnItem(shelfItem) {
     if (!this.currentOrder) return;
 
-    const orderItem = this.currentOrder.items.find(oi => oi.id === item.id);
+    const orderItem = this.currentOrder.items.find(oi => oi.sku === shelfItem.sku);
     if (orderItem && orderItem.pickedQuantity > 0) {
-      orderItem.pickedQuantity--;
-      item.quantity++;
+      orderItem.pickedQuantity -= 1;
+      shelfItem.quantity += 1;
       orderItem.completed = orderItem.pickedQuantity >= orderItem.requiredQuantity;
-      this.score -= 5; // Штраф за возврат
+      this.score -= 5; // штраф за возврат
     }
 
     this.updateOrderPanel();
@@ -721,8 +706,8 @@ class WareMoverGame {
       this.ctx.fillText(item.name, x + 10, y + 25);
       this.ctx.fillText(`Кол-во: ${item.quantity}`, x + 10, y + 45);
 
-      // Прогресс по заказу
-      const orderItem = this.currentOrder?.items.find(oi => oi.id === item.id);
+      // Прогресс по заказу (по SKU)
+      const orderItem = this.currentOrder?.items.find(oi => oi.sku === item.sku);
       if (orderItem) {
         this.ctx.fillText(
           `Собрано: ${orderItem.pickedQuantity}/${orderItem.requiredQuantity}`,
@@ -731,10 +716,11 @@ class WareMoverGame {
       }
     });
 
-    // Быстрый выход через E
-    if (this.keys['KeyE']) {
+    // Быстрый выход через E/Пробел
+    if (this.keys['KeyE'] || this.keys['Space']) {
       this.exitShelfView();
       this.keys['KeyE'] = false;
+      this.keys['Space'] = false;
     }
   }
 }
