@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>WareMover Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./style.css?v=3" />
+  <link rel="stylesheet" href="./style.css?v=5" />
 </head>
 <body>
   <!-- Главное меню -->
@@ -13,35 +13,8 @@
       <h1>WareMover</h1>
       <div class="btn-row">
         <button id="startGameBtn">Начать игру</button>
-        <button id="settingsBtn" class="secondary">Настройки</button>
         <button id="helpBtn" class="secondary">Помощь</button>
       </div>
-    </div>
-  </section>
-
-  <!-- Выбор режима -->
-  <section id="modeSelection" class="screen">
-    <div class="panel">
-      <h2>Выбор режима</h2>
-      <div class="btn-row">
-        <button id="quickOrderBtn">Быстрый заказ</button>
-        <button id="marathonBtn">Марафон</button>
-      </div>
-      <button id="backToMenuBtn" class="secondary">Назад</button>
-    </div>
-  </section>
-
-  <!-- Выбор метода -->
-  <section id="pickingMethodSelection" class="screen">
-    <div class="panel">
-      <h2>Метод комплектования</h2>
-      <div class="btn-row wrap">
-        <button id="pickByListBtn">Pick-by-List</button>
-        <button id="pickByVoiceBtn">Pick-by-Voice</button>
-        <button id="pickByLightBtn">Pick-by-Light</button>
-        <button id="pickByVisionBtn">Pick-by-Vision</button>
-      </div>
-      <button id="backToModeBtn" class="secondary">Назад</button>
     </div>
   </section>
 
@@ -54,7 +27,7 @@
         <div class="hud-grid">
           <div>Очки: <span id="score">0</span></div>
           <div>Время: <span id="time">00:00</span></div>
-          <div>Метод: <span id="currentMethod"></span></div>
+          <div>Метод: <span id="currentMethod">Pick-by-List</span></div>
           <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
         </div>
         <div class="hud-buttons">
@@ -78,7 +51,7 @@
   <section id="helpScreen" class="screen">
     <div class="panel">
       <h2>Помощь</h2>
-      <p>WASD/стрелки — движение • E/Пробел — открыть/закрыть полку • ЛКМ — взять • ПКМ — вернуть</p>
+      <p>WASD/стрелки — движение • E/Пробел — открыть/закрыть полку • ЛКМ — взять всё доступное • ПКМ — вернуть 1</p>
       <button id="backFromHelpBtn" class="secondary">Назад</button>
     </div>
   </section>
@@ -98,7 +71,6 @@
     </div>
   </section>
 
-  <!-- defer + кэш-бастинг -->
-  <script src="./game.js?v=3" defer></script>
+  <script src="./game.js?v=5" defer></script>
 </body>
 </html>
