@@ -1,31 +1,28 @@
-// Глобальный лог ошибок — сразу видно, если что-то падает до переключения экранов
+// Глобальный лог ошибок — на случай неожиданных падений
 window.addEventListener('error', e => {
   console.error('[WareMover ERROR]', e.message, e.filename, e.lineno, e.colno);
 });
 
 class WareMoverGame {
   constructor(){
-    this.canvas = null; this.ctx = null;
+    this.canvas=null; this.ctx=null;
 
-    this.gameState = 'menu';       // menu, modeSelection, methodSelection, playing, paused, results
-    this.gameMode = null;          // quickOrder, marathon
-    this.pickingMethod = null;     // pickByList, pickByVoice, pickByLight, pickByVision
+    this.gameState='menu'; this.gameMode=null; this.pickingMethod=null;
+    this.score=0; this.startTime=0; this.gameTime=0;
+    this.currentOrder=null; this.ordersCompleted=0; this.totalErrors=0;
 
-    this.score = 0; this.startTime = 0; this.gameTime = 0;
-    this.currentOrder = null; this.ordersCompleted = 0; this.totalErrors = 0;
+    this.player={x:100,y:100,width:32,height:32,speed:3};
 
-    this.player = { x:100, y:100, width:32, height:32, speed:3 };
-
-    this.warehouse = {
-      width: 800, height: 600,
-      shelves: [],
-      computer: { x:50, y:50, width:60, height:40 }
+    this.warehouse={
+      width:800,height:600,
+      shelves:[],
+      computer:{x:50,y:50,width:60,height:40}
     };
 
-    this.keys = {}; this.mousePos = { x:0, y:0 };
-    this.nearInteractable = null;
-    this.inShelfView = false;
-    this.currentShelf = null;
+    this.keys={}; this.mousePos={x:0,y:0};
+    this.nearInteractable=null;
+    this.inShelfView=false;
+    this.currentShelf=null;
 
     this.init();
   }
@@ -37,100 +34,88 @@ class WareMoverGame {
     this.showScreen('mainMenu');
   }
 
-  getEl(id){ const el = document.getElementById(id); if(!el) console.warn('[WareMover] no element', id); return el; }
+  getEl(id){ const el=document.getElementById(id); if(!el) console.warn('[WareMover] no element', id); return el; }
 
   setupEventListeners(){
     // меню
-    this.getEl('startGameBtn')?.addEventListener('click', ()=>this.showScreen('modeSelection'));
-    this.getEl('settingsBtn')?.addEventListener('click', ()=>alert('Настройки позже'));
-    this.getEl('helpBtn')?.addEventListener('click', ()=>this.showScreen('helpScreen'));
-
+    this.getEl('startGameBtn')?.addEventListener('click',()=>this.showScreen('modeSelection'));
+    this.getEl('settingsBtn')?.addEventListener('click',()=>alert('Настройки позже'));
+    this.getEl('helpBtn')?.addEventListener('click',()=>this.showScreen('helpScreen'));
     // режим
-    this.getEl('quickOrderBtn')?.addEventListener('click', ()=>{ this.gameMode='quickOrder'; this.showScreen('pickingMethodSelection'); });
-    this.getEl('marathonBtn')?.addEventListener('click', ()=>{ this.gameMode='marathon'; this.showScreen('pickingMethodSelection'); });
-
+    this.getEl('quickOrderBtn')?.addEventListener('click',()=>{this.gameMode='quickOrder'; this.showScreen('pickingMethodSelection');});
+    this.getEl('marathonBtn')?.addEventListener('click',()=>{this.gameMode='marathon'; this.showScreen('pickingMethodSelection');});
     // методы
-    this.getEl('pickByListBtn')?.addEventListener('click', ()=>{ this.pickingMethod='pickByList'; this.startGame(); });
-    this.getEl('pickByVoiceBtn')?.addEventListener('click', ()=>{ this.pickingMethod='pickByVoice'; this.startGame(); });
-    this.getEl('pickByLightBtn')?.addEventListener('click', ()=>{ this.pickingMethod='pickByLight'; this.startGame(); });
-    this.getEl('pickByVisionBtn')?.addEventListener('click', ()=>{ this.pickingMethod='pickByVision'; this.startGame(); });
+    this.getEl('pickByListBtn')?.addEventListener('click',()=>{this.pickingMethod='pickByList'; this.startGame();});
+    this.getEl('pickByVoiceBtn')?.addEventListener('click',()=>{this.pickingMethod='pickByVoice'; this.startGame();});
+    this.getEl('pickByLightBtn')?.addEventListener('click',()=>{this.pickingMethod='pickByLight'; this.startGame();});
+    this.getEl('pickByVisionBtn')?.addEventListener('click',()=>{this.pickingMethod='pickByVision'; this.startGame();});
+    // назад/результаты/пауза/выход
+    this.getEl('backToMenuBtn')?.addEventListener('click',()=>this.showScreen('mainMenu'));
+    this.getEl('backToModeBtn')?.addEventListener('click',()=>this.showScreen('modeSelection'));
+    this.getEl('backFromHelpBtn')?.addEventListener('click',()=>this.showScreen('mainMenu'));
+    this.getEl('playAgainBtn')?.addEventListener('click',()=>this.showScreen('modeSelection'));
+    this.getEl('backToMainBtn')?.addEventListener('click',()=>this.showScreen('mainMenu'));
+    this.getEl('pauseBtn')?.addEventListener('click',()=>this.togglePause());
+    this.getEl('exitToMenuBtn')?.addEventListener('click',()=>{ this.gameState='menu'; this.showScreen('mainMenu'); });
 
-    // назад/результаты
-    this.getEl('backToMenuBtn')?.addEventListener('click', ()=>this.showScreen('mainMenu'));
-    this.getEl('backToModeBtn')?.addEventListener('click', ()=>this.showScreen('modeSelection'));
-    this.getEl('backFromHelpBtn')?.addEventListener('click', ()=>this.showScreen('mainMenu'));
-    this.getEl('playAgainBtn')?.addEventListener('click', ()=>this.showScreen('modeSelection'));
-    this.getEl('backToMainBtn')?.addEventListener('click', ()=>this.showScreen('mainMenu'));
-
-    // пауза/выход
-    this.getEl('pauseBtn')?.addEventListener('click', ()=>this.togglePause());
-    this.getEl('exitToMenuBtn')?.addEventListener('click', ()=>{ this.gameState='menu'; this.showScreen('mainMenu'); });
-
-    // клавиатура
+    // клавиатура (тоггл E/Space)
     document.addEventListener('keydown', (e)=>{
-      this.keys[e.code] = true;
-
-      const interact = (e.code === 'KeyE') || (e.code === 'Space') || (e.key === ' ');
-      if (interact && this.gameState === 'playing') {
-        e.preventDefault();               // чтобы пробел не скроллил
-        this.handleInteraction();         // <-- ТОГГЛ: открыть/закрыть полку
+      this.keys[e.code]=true;
+      const interact=(e.code==='KeyE') || (e.code==='Space') || (e.key===' ');
+      if (interact && this.gameState==='playing'){
+        e.preventDefault();
+        this.handleInteraction(); // одно нажатие — открыть/закрыть
       }
-
-      if (e.code === 'Escape' && this.gameState === 'playing') this.togglePause();
-    }, { capture: true });
-
-    document.addEventListener('keyup', (e)=>{
-      this.keys[e.code] = false;
-    });
+      if (e.code==='Escape' && this.gameState==='playing') this.togglePause();
+    }, {capture:true});
+    document.addEventListener('keyup', (e)=>{ this.keys[e.code]=false; });
 
     // мышь
     document.addEventListener('mousemove', (e)=>{
-      const r = this.canvas?.getBoundingClientRect();
-      if (r){ this.mousePos.x = e.clientX - r.left; this.mousePos.y = e.clientY - r.top; }
+      const r=this.canvas?.getBoundingClientRect();
+      if (r){ this.mousePos.x=e.clientX-r.left; this.mousePos.y=e.clientY-r.top; }
     });
 
-    // клик по полке (в виде склада) — альтернативное открытие
-    this.getEl('gameCanvas')?.addEventListener('click', (e)=>{
-      if (this.gameState !== 'playing' || this.inShelfView || !this.canvas) return;
-      const r = this.canvas.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
-      const idx = this.warehouse.shelves.findIndex(s => x>=s.x && x<=s.x+s.width && y>=s.y && y<=s.y+s.height);
-      if (idx >= 0) this.enterShelfView(idx);
+    // альтернатива: клик по полке (в виде склада) — открыть её
+    this.getEl('gameCanvas')?.addEventListener('click',(e)=>{
+      if (this.gameState!=='playing' || this.inShelfView || !this.canvas) return;
+      const r=this.canvas.getBoundingClientRect();
+      const x=e.clientX-r.left, y=e.clientY-r.top;
+      const idx=this.warehouse.shelves.findIndex(s=>x>=s.x&&x<=s.x+s.width&&y>=s.y&&y<=s.y+s.height);
+      if (idx>=0) this.enterShelfView(idx);
     });
 
     // клики внутри полки
-    document.addEventListener('click', (e)=>{ if (this.inShelfView && this.gameState==='playing') this.handleShelfClick(e); });
-    document.addEventListener('contextmenu', (e)=>{ if (this.inShelfView && this.gameState==='playing'){ e.preventDefault(); this.handleShelfRightClick(e);} });
+    document.addEventListener('click',(e)=>{ if (this.inShelfView && this.gameState==='playing') this.handleShelfClick(e); });
+    document.addEventListener('contextmenu',(e)=>{ if (this.inShelfView && this.gameState==='playing'){ e.preventDefault(); this.handleShelfRightClick(e);} });
   }
 
   showScreen(screenId){
     try{
       document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-      const target = this.getEl(screenId);
+      const target=this.getEl(screenId);
       if (!target){ console.error('[WareMover] screen not found:', screenId); return; }
       target.classList.add('active');
       console.log('[WareMover] showScreen ->', screenId);
 
-      if (screenId === 'gameScreen'){
-        this.canvas = this.getEl('gameCanvas');
+      if (screenId==='gameScreen'){
+        this.canvas=this.getEl('gameCanvas');
         if (!this.canvas){ console.error('No canvas'); return; }
-        this.canvas.width = this.warehouse.width;
-        this.canvas.height = this.warehouse.height;
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.tabIndex = 0; // canvas должен иметь фокус для клавиш
-        this.canvas.focus();
-
-        this.gameState = 'playing';
+        this.canvas.width=this.warehouse.width;
+        this.canvas.height=this.warehouse.height;
+        this.ctx=this.canvas.getContext('2d');
+        this.canvas.tabIndex=0; this.canvas.focus(); // ловим клавиши
+        this.gameState='playing';
         this.gameLoop();
       } else {
-        this.inShelfView = false; this.currentShelf = null;
+        this.inShelfView=false; this.currentShelf=null;
       }
     }catch(err){ console.error('[WareMover] showScreen error', err); }
   }
 
-  // ---------- склад ----------
+  // --------- склад ----------
   initializeWarehouse(){
-    this.warehouse.shelves = [
+    this.warehouse.shelves=[
       {x:150,y:100,width:120,height:60,items:this.generateShelfItems()},
       {x:150,y:200,width:120,height:60,items:this.generateShelfItems()},
       {x:150,y:300,width:120,height:60,items:this.generateShelfItems()},
@@ -142,43 +127,38 @@ class WareMoverGame {
     ];
   }
   generateShelfItems(){
-    const arr = [];
-    for (let p=0; p<12; p++){
-      const sku = p+1;
-      arr.push({
-        id:`item_${Math.random().toString(36).slice(2,11)}`,
-        sku, name:`Товар ${sku}`,
-        quantity: Math.floor(Math.random()*5), // 0..4
-        position: p
-      });
+    const a=[];
+    for (let p=0;p<12;p++){
+      const sku=p+1;
+      a.push({ id:`item_${Math.random().toString(36).slice(2,11)}`, sku, name:`Товар ${sku}`, quantity:Math.floor(Math.random()*5), position:p });
     }
-    return arr;
+    return a;
   }
 
-  // ---------- заказ ----------
+  // --------- заказ ----------
   generateOrder(){
-    const all = Array.from({length:12}, (_,i)=>i+1);
-    for (let i=all.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [all[i],all[j]]=[all[j],all[i]]; }
-    const chosen = all.slice(0,8);
-    const items = chosen.map(sku=>({ sku, name:`Товар ${sku}`, requiredQuantity:Math.floor(Math.random()*4)+9, pickedQuantity:0, completed:false }));
+    const all=Array.from({length:12},(_,i)=>i+1);
+    for (let i=all.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [all[i],all[j]]=[all[j],all[i]]; }
+    const chosen=all.slice(0,8);
+    const items=chosen.map(sku=>({ sku, name:`Товар ${sku}`, requiredQuantity:Math.floor(Math.random()*4)+9, pickedQuantity:0, completed:false }));
     return { id:`order_${Date.now()}`, items, totalItems:items.reduce((s,i)=>s+i.requiredQuantity,0), completedItems:0 };
   }
 
-  // ---------- запуск/цикл ----------
+  // --------- запуск/цикл ----------
   startGame(){
     this.score=0; this.startTime=Date.now(); this.gameTime=0;
     this.ordersCompleted=0; this.totalErrors=0;
-    this.currentOrder = this.generateOrder();
+    this.currentOrder=this.generateOrder();
     this.player.x=100; this.player.y=100;
     this.updateHUD(); this.updateOrderPanel();
     this.showScreen('gameScreen');
   }
   gameLoop(){ if (this.gameState!=='playing') return; this.update(); this.render(); requestAnimationFrame(()=>this.gameLoop()); }
 
-  // ---------- update ----------
+  // --------- update ----------
   update(){
     if (this.gameState!=='playing') return;
-    this.gameTime = Date.now() - this.startTime;
+    this.gameTime=Date.now()-this.startTime;
     this.updatePlayer();
     this.checkInteractions();
     this.updateHUD();
@@ -188,23 +168,22 @@ class WareMoverGame {
   updatePlayer(){
     if (this.inShelfView) return;
     let dx=0, dy=0;
-    if (this.keys['KeyW']||this.keys['ArrowUp']) dy -= this.player.speed;
-    if (this.keys['KeyS']||this.keys['ArrowDown']) dy += this.player.speed;
-    if (this.keys['KeyA']||this.keys['ArrowLeft']) dx -= this.player.speed;
-    if (this.keys['KeyD']||this.keys['ArrowRight']) dx += this.player.speed;
-
+    if (this.keys['KeyW']||this.keys['ArrowUp']) dy-=this.player.speed;
+    if (this.keys['KeyS']||this.keys['ArrowDown']) dy+=this.player.speed;
+    if (this.keys['KeyA']||this.keys['ArrowLeft']) dx-=this.player.speed;
+    if (this.keys['KeyD']||this.keys['ArrowRight']) dx+=this.player.speed;
     const nx=this.player.x+dx, ny=this.player.y+dy;
-    if (nx>=0 && nx+this.player.width<=this.warehouse.width) this.player.x = nx;
-    if (ny>=0 && ny+this.player.height<=this.warehouse.height) this.player.y = ny;
+    if (nx>=0 && nx+this.player.width<=this.warehouse.width) this.player.x=nx;
+    if (ny>=0 && ny+this.player.height<=this.warehouse.height) this.player.y=ny;
   }
 
-  // ---------- взаимодействия ----------
+  // --------- взаимодействия ----------
   checkInteractions(){
-    this.nearInteractable = null;
-    if (this.isNear(this.player, this.warehouse.computer)) this.nearInteractable = 'computer';
-    this.warehouse.shelves.forEach((s,i)=>{ if (this.isNear(this.player,s)) this.nearInteractable = {type:'shelf', index:i}; });
+    this.nearInteractable=null;
+    if (this.isNear(this.player, this.warehouse.computer)) this.nearInteractable='computer';
+    this.warehouse.shelves.forEach((s,i)=>{ if (this.isNear(this.player,s)) this.nearInteractable={type:'shelf',index:i}; });
 
-    const panel = this.getEl('interactionPanel');
+    const panel=this.getEl('interactionPanel');
     if (panel){
       if (this.nearInteractable){ panel.classList.remove('hidden'); this.updateInteractionPanel(); }
       else panel.classList.add('hidden');
@@ -212,89 +191,117 @@ class WareMoverGame {
   }
   isNear(a,b,dist=90){
     const ax=a.x+a.width/2, ay=a.y+a.height/2, bx=b.x+b.width/2, by=b.y+b.height/2;
-    return Math.hypot(bx-ax,by-ay) < dist;
+    return Math.hypot(bx-ax,by-ay)<dist;
   }
   updateInteractionPanel(){
-    const c = this.getEl('interactionContent'); if(!c) return;
+    const c=this.getEl('interactionContent'); if(!c) return;
     if (this.nearInteractable==='computer'){
-      c.innerHTML = '<p>Нажмите E/Пробел, чтобы посмотреть заказ</p>';
+      c.innerHTML='<p>Нажмите E/Пробел, чтобы посмотреть заказ</p>';
     } else if (this.nearInteractable && this.nearInteractable.type==='shelf'){
-      c.innerHTML = '<p>Стеллаж рядом. E/Пробел — открыть</p><button id="openShelfBtn">Открыть</button>';
-      const btn = this.getEl('openShelfBtn'); if (btn) btn.onclick = ()=> this.enterShelfView(this.nearInteractable.index);
-    } else c.innerHTML = '';
+      c.innerHTML='<p>Стеллаж рядом. E/Пробел — открыть</p><button id="openShelfBtn">Открыть</button>';
+      const btn=this.getEl('openShelfBtn'); if (btn) btn.onclick=()=>this.enterShelfView(this.nearInteractable.index);
+    } else c.innerHTML='';
   }
 
-  // ТОГГЛ — одно нажатие открывает, повторное закрывает
+  // ТОГГЛ: E/Space
   handleInteraction(){
-    if (this.inShelfView){
-      this.exitShelfView();
-      return;
-    }
-    if (this.nearInteractable === 'computer'){
-      this.showOrderInfo();
-    } else if (this.nearInteractable && this.nearInteractable.type==='shelf'){
-      this.enterShelfView(this.nearInteractable.index);
-    }
+    if (this.inShelfView){ this.exitShelfView(); return; }
+    if (this.nearInteractable==='computer') this.showOrderInfo();
+    else if (this.nearInteractable && this.nearInteractable.type==='shelf') this.enterShelfView(this.nearInteractable.index);
   }
 
   showOrderInfo(){ this.updateOrderPanel(); if (this.pickingMethod==='pickByVoice') this.speakOrderInfo(); }
   speakOrderInfo(){
     if ('speechSynthesis' in window){
-      const u = new SpeechSynthesisUtterance();
-      u.text = `Новый заказ. Необходимо собрать ${(this.currentOrder?.items?.length)||0} позиций.`; u.lang='ru-RU';
+      const u=new SpeechSynthesisUtterance();
+      u.text=`Новый заказ. Необходимо собрать ${(this.currentOrder?.items?.length)||0} позиций.`; u.lang='ru-RU';
       speechSynthesis.speak(u);
     }
   }
 
-  // ---------- Полки ----------
+  // --------- полки ----------
   enterShelfView(i){ console.log('[WareMover] enter shelf', i); this.inShelfView=true; this.currentShelf=i; this.renderShelfView(); }
   exitShelfView(){ this.inShelfView=false; this.currentShelf=null; }
 
   handleShelfClick(e){
-    const r = this.canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const r=this.canvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+
     // кнопка выхода
     if (x>=this.warehouse.width-100 && x<=this.warehouse.width-20 && y>=20 && y<=50){ this.exitShelfView(); return; }
-    const shelf = this.warehouse.shelves[this.currentShelf];
-    const idx = this.getClickedItemIndex(x,y);
-    if (idx !== -1) this.pickItem(shelf.items[idx]);
+
+    const shelf=this.warehouse.shelves[this.currentShelf];
+    const idx=this.getClickedItemIndex(x,y);
+    if (idx===-1) return;
+
+    const shelfItem=shelf.items[idx];
+    const orderItem=this.currentOrder?.items.find(oi=>oi.sku===shelfItem.sku);
+
+    // не из заказа — штраф
+    if (!orderItem){ this.totalErrors++; this.score-=10; this.updateOrderPanel(); this.updateHUD(); return; }
+
+    // позиция заказа уже закрыта — игнорируем клики по любым полкам с этим SKU
+    if (orderItem.completed) return;
+
+    // забираем всё из ячейки, но не больше остатка по заказу
+    const remainingToPick=orderItem.requiredQuantity - orderItem.pickedQuantity;
+    const take=Math.min(remainingToPick, shelfItem.quantity);
+    if (take<=0) return;
+
+    this.pickItem(shelfItem, take);
   }
+
   handleShelfRightClick(e){
-    const r = this.canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    const shelf = this.warehouse.shelves[this.currentShelf];
-    const idx = this.getClickedItemIndex(x,y);
-    if (idx !== -1) this.returnItem(shelf.items[idx]);
+    const r=this.canvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    const shelf=this.warehouse.shelves[this.currentShelf];
+    const idx=this.getClickedItemIndex(x,y);
+    if (idx===-1) return;
+    this.returnItem(shelf.items[idx]);
   }
+
   getClickedItemIndex(x,y){
     const sx=100, sy=100, w=150, h=100;
     const c=Math.floor((x-sx)/w), r=Math.floor((y-sy)/h);
     return (c>=0&&c<4&&r>=0&&r<3) ? r*4+c : -1;
   }
 
-  // подбор по SKU
-  pickItem(sItem){
+  // подбор по SKU с количеством
+  pickItem(shelfItem, amount=1){
     if (!this.currentOrder) return;
-    const oItem = this.currentOrder.items.find(oi=>oi.sku===sItem.sku);
-    if (!oItem){ this.totalErrors++; this.score-=10; this.updateOrderPanel(); this.updateHUD(); return; }
-    if (oItem.completed){ this.totalErrors++; this.score-=5; this.updateHUD(); return; }
-    if (sItem.quantity<=0){ this.totalErrors++; this.score-=3; this.updateHUD(); return; }
+    const orderItem=this.currentOrder.items.find(oi=>oi.sku===shelfItem.sku);
+    if (!orderItem){ this.totalErrors++; this.score-=10; this.updateOrderPanel(); this.updateHUD(); return; }
 
-    sItem.quantity--; oItem.pickedQuantity++; this.score+=10;
-    if (oItem.pickedQuantity>=oItem.requiredQuantity){ oItem.completed=true; this.score+=50; }
-    this.updateOrderPanel(); this.updateHUD();
-  }
-  returnItem(sItem){
-    if (!this.currentOrder) return;
-    const oItem = this.currentOrder.items.find(oi=>oi.sku===sItem.sku);
-    if (oItem && oItem.pickedQuantity>0){
-      oItem.pickedQuantity--; sItem.quantity++;
-      oItem.completed = oItem.pickedQuantity >= oItem.requiredQuantity;
-      this.score -= 5;
+    const remainingToPick=orderItem.requiredQuantity - orderItem.pickedQuantity;
+    const canTake=Math.min(amount, remainingToPick, shelfItem.quantity);
+    if (canTake<=0) return;
+
+    shelfItem.quantity -= canTake;
+    orderItem.pickedQuantity += canTake;
+    this.score += 10 * canTake;
+
+    if (!orderItem.completed && orderItem.pickedQuantity >= orderItem.requiredQuantity){
+      orderItem.completed = true;
+      this.score += 50; // бонус за закрытие позиции
     }
+
     this.updateOrderPanel(); this.updateHUD();
   }
+
+  returnItem(shelfItem){
+    if (!this.currentOrder) return;
+    const orderItem=this.currentOrder.items.find(oi=>oi.sku===shelfItem.sku);
+    if (orderItem && orderItem.pickedQuantity>0){
+      orderItem.pickedQuantity--; shelfItem.quantity++;
+      orderItem.completed = orderItem.pickedQuantity >= orderItem.requiredQuantity;
+      this.score -= 5;
+      this.updateOrderPanel(); this.updateHUD();
+    }
+  }
+
   isOrderCompleted(){ return !!this.currentOrder && this.currentOrder.items.every(i=>i.completed); }
 
-  // ---------- HUD/UI ----------
+  // --------- HUD/UI ----------
   updateHUD(){
     this.getEl('score')&&(this.getEl('score').textContent=this.score);
     this.getEl('time')&&(this.getEl('time').textContent=this.formatTime(this.gameTime));
@@ -305,64 +312,71 @@ class WareMoverGame {
     this.getEl('currentItem')&&(this.getEl('currentItem').textContent=done);
     this.getEl('totalItems')&&(this.getEl('totalItems').textContent=this.currentOrder.items.length);
   }
+
   updateOrderPanel(){
-    const c = this.getEl('orderList'); if (!c || !this.currentOrder) return;
-    c.innerHTML = '';
-    this.currentOrder.items.forEach(it=>{
-      const d = document.createElement('div'); d.className='order-item';
-      if(it.completed) d.classList.add('completed'); else if(it.pickedQuantity>0) d.classList.add('current');
-      d.innerHTML = `<span>${it.name}</span><span>${it.pickedQuantity}/${it.requiredQuantity}</span>`;
-      c.appendChild(d);
+    const cont=this.getEl('orderList'); if(!cont||!this.currentOrder) return;
+    cont.innerHTML='';
+    this.currentOrder.items.forEach(item=>{
+      const div=document.createElement('div');
+      div.className='order-item';
+      if (item.completed) div.classList.add('completed');
+      else if (item.pickedQuantity>0) div.classList.add('current');
+      div.innerHTML=`<span>${item.name}</span><span>${item.pickedQuantity}/${item.requiredQuantity}</span>`;
+      cont.appendChild(div);
     });
   }
+
   formatTime(ms){ const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60; return `${m.toString().padStart(2,'0')}:${r.toString().padStart(2,'0')}`; }
 
-  // ---------- завершение/пауза ----------
-  togglePause(){ if(this.gameState==='playing'){ this.gameState='paused'; } else if(this.gameState==='paused'){ this.gameState='playing'; this.gameLoop(); } }
-  endGame(){
-    this.gameState='results';
-    this.ordersCompleted = (this.gameMode==='marathon' ? (this.isOrderCompleted()?1:0) : 1);
-    this.showResults();
-  }
+  // --------- завершение/пауза ----------
+  togglePause(){ if (this.gameState==='playing'){ this.gameState='paused'; } else if (this.gameState==='paused'){ this.gameState='playing'; this.gameLoop(); } }
+  endGame(){ this.gameState='results'; this.ordersCompleted=(this.gameMode==='marathon' ? (this.isOrderCompleted()?1:0) : 1); this.showResults(); }
   showResults(){
     const set=(id,v)=>{ const h=this.getEl(id); if(!h) return; const s=h.querySelector('span')||h; s.textContent=v; };
     set('finalScore',this.score); set('finalTime',this.formatTime(this.gameTime));
-    const acc = this.totalErrors===0 ? 100 : Math.max(0,100-(this.totalErrors*10));
+    const acc=this.totalErrors===0?100:Math.max(0,100-(this.totalErrors*10));
     set('accuracy',`${acc}%`); set('ordersCompleted',this.ordersCompleted);
     this.showScreen('resultsScreen');
   }
 
-  // ---------- рендер ----------
+  // --------- рендер ----------
   render(){
     if (!this.ctx) return;
     this.ctx.fillStyle='#34495e'; this.ctx.fillRect(0,0,this.warehouse.width,this.warehouse.height);
     if (this.inShelfView) this.renderShelfView(); else this.renderWarehouse();
   }
+
   renderWarehouse(){
-    // стеллажи
+    // полки
     this.ctx.fillStyle='#8b4513';
-    this.warehouse.shelves.forEach(s=> this.ctx.fillRect(s.x,s.y,s.width,s.height));
-    // подсветка активного
+    this.warehouse.shelves.forEach(s=>this.ctx.fillRect(s.x,s.y,s.width,s.height));
+
+    // подсветка активной полки
     if (this.nearInteractable && this.nearInteractable.type==='shelf'){
       const s=this.warehouse.shelves[this.nearInteractable.index];
       this.ctx.strokeStyle='rgba(241,196,15,.95)'; this.ctx.lineWidth=3;
       this.ctx.strokeRect(s.x-3,s.y-3,s.width+6,s.height+6);
     }
+
     // компьютер
     this.ctx.fillStyle='#2c3e50';
     this.ctx.fillRect(this.warehouse.computer.x,this.warehouse.computer.y,this.warehouse.computer.width,this.warehouse.computer.height);
+
     // игрок
     this.ctx.fillStyle='#e74c3c';
     this.ctx.fillRect(this.player.x,this.player.y,this.player.width,this.player.height);
+
     // индикатор "E"
     if (this.nearInteractable){
       this.ctx.fillStyle='rgba(241,196,15,.9)'; this.ctx.font='16px Arial';
       this.ctx.fillText('E', this.player.x + this.player.width + 10, this.player.y + 20);
     }
   }
+
   renderShelfView(){
     this.ctx.fillStyle='#2c3e50'; this.ctx.fillRect(0,0,this.warehouse.width,this.warehouse.height);
 
+    // заголовок
     this.ctx.fillStyle='#fff'; this.ctx.font='24px Arial';
     this.ctx.fillText(`Стеллаж ${this.currentShelf+1}`, 20, 40);
 
@@ -372,14 +386,15 @@ class WareMoverGame {
     this.ctx.fillStyle='#fff'; this.ctx.font='16px Arial';
     this.ctx.fillText('Выход (E)', this.warehouse.width-95, 40);
 
-    // товары 4x3
-    const shelf = this.warehouse.shelves[this.currentShelf];
+    // сетка 4x3
+    const shelf=this.warehouse.shelves[this.currentShelf];
     const sx=100, sy=100, w=150, h=100;
 
     shelf.items.forEach((it,i)=>{
       const col=i%4, row=Math.floor(i/4);
       const x=sx+col*w, y=sy+row*h;
 
+      // карточка
       this.ctx.fillStyle='#ecf0f1';
       this.ctx.fillRect(x,y,w-10,h-10);
 
@@ -387,15 +402,22 @@ class WareMoverGame {
       this.ctx.fillText(it.name, x+10, y+25);
       this.ctx.fillText(`Кол-во: ${it.quantity}`, x+10, y+45);
 
-      const o = this.currentOrder?.items.find(oi=>oi.sku===it.sku);
-      if (o){
-        this.ctx.fillText(`Собрано: ${o.pickedQuantity}/${o.requiredQuantity}`, x+10, y+65);
+      const o=this.currentOrder?.items.find(oi=>oi.sku===it.sku);
+      if (o) this.ctx.fillText(`Собрано: ${o.pickedQuantity}/${o.requiredQuantity}`, x+10, y+65);
+
+      // визуальный лок
+      if (o?.completed){
+        this.ctx.fillStyle='rgba(46,204,113,0.45)'; this.ctx.fillRect(x,y,w-10,h-10);
+        this.ctx.fillStyle='#fff'; this.ctx.font='bold 14px Arial'; this.ctx.fillText('Готово', x+10, y+85);
+      } else if (it.quantity===0){
+        this.ctx.fillStyle='rgba(0,0,0,0.25)'; this.ctx.fillRect(x,y,w-10,h-10);
+        this.ctx.fillStyle='#fff'; this.ctx.font='bold 14px Arial'; this.ctx.fillText('Пусто', x+10, y+85);
       }
     });
   }
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  window.game = new WareMoverGame();
+  window.game=new WareMoverGame();
   console.log('WareMover game loaded successfully');
 });
