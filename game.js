@@ -1,4 +1,4 @@
-// Глобальный лог ошибок — чтобы сразу увидеть падения
+// Глобальный лог ошибок
 window.addEventListener('error', e => {
   console.error('[WareMover ERROR]', e.message, e.filename, e.lineno, e.colno);
 });
@@ -8,8 +8,8 @@ class WareMoverGame {
     this.canvas = null; this.ctx = null;
 
     this.gameState = 'menu';
-    this.gameMode = 'quickOrder';        // дефолт
-    this.pickingMethod = 'pickByList';   // дефолт
+    this.gameMode = 'quickOrder';
+    this.pickingMethod = 'pickByList';
 
     this.score = 0; this.startTime = 0; this.gameTime = 0;
     this.currentOrder = null; this.ordersCompleted = 0; this.totalErrors = 0;
@@ -23,27 +23,28 @@ class WareMoverGame {
     this.inShelfView = false;
     this.currentShelf = null;
 
-    // обработчики для режима полки (навешиваются/снимаются динамически)
+    // обработчики для режима полки
     this._onCanvasShelfClick = null;
     this._onCanvasShelfContext = null;
     this._onCanvasShelfTouch = null;
 
-    // --- настройки скоринга ---
-    this.SECONDS_PER_UNIT   = 2.5; // "пар": сек на 1 ед.
+    // --- скоринг ---
+    this.SECONDS_PER_UNIT   = 2.5;
     this.WEIGHT_COMPLETION  = 0.60;
     this.WEIGHT_TIME        = 0.25;
     this.WEIGHT_SHELF       = 0.15;
 
-    // --- счётчики по стеллажам ---
-    this.uniqueShelvesOpened = new Set(); // уникально открытые полки
-    this.totalShelfOpens     = 0;         // всего открытий
-    this.relevantShelfOpens  = 0;         // открытий "нужных" полок
+    // --- счётчики полок ---
+    this.uniqueShelvesOpened = new Set();
+    this.totalShelfOpens     = 0;
+    this.relevantShelfOpens  = 0;
 
-    // --- константы уголка карточки ---
-    this.cornerW = 25;
-    this.cornerH = 20;
-    this.cornerOffsetX = 35; // от правого края карточки
-    this.cornerOffsetY = 5;  // от верхнего края карточки
+    // --- уголок карточки ---
+    this.cornerW = 28;       // шире — удобнее попасть
+    this.cornerH = 24;
+    this.cornerHitSlop = 8;  // допуск вокруг уголка
+    this.cornerOffsetX = 35; // от правого края ячейки (w)
+    this.cornerOffsetY = 5;
 
     this.init();
   }
@@ -69,63 +70,32 @@ class WareMoverGame {
     this.getEl('pauseBtn')?.addEventListener('click', ()=> this.togglePause());
     this.getEl('exitToMenuBtn')?.addEventListener('click', ()=>{ this.gameState='menu'; this.showScreen('mainMenu'); });
 
-    // клавиатура (тоггл E/Space)
+    // клавиатура
     document.addEventListener('keydown', (e)=>{
       this.keys[e.code] = true;
       const interact = (e.code==='KeyE') || (e.code==='Space') || (e.key===' ');
-      if (interact && this.gameState==='playing'){
-        e.preventDefault();
-        this.handleInteraction(); // открыть/закрыть полку
-      }
+      if (interact && this.gameState==='playing'){ e.preventDefault(); this.handleInteraction(); }
       if (e.code==='Escape' && this.gameState==='playing') this.togglePause();
     }, {capture:true});
     document.addEventListener('keyup', (e)=>{ this.keys[e.code] = false; });
 
-    // мышь — позиция (подсветка)
+    // мышь — позиция (для подсветки)
     document.addEventListener('mousemove', (e)=>{
-      const r=this.canvas?.getBoundingClientRect();
-      if (r){ this.mousePos.x=e.clientX-r.left; this.mousePos.y=e.clientY-r.top; }
+      if (!this.canvas) return;
+      const rect=this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      this.mousePos.x=(e.clientX-rect.left)*scaleX;
+      this.mousePos.y=(e.clientY-rect.top)*scaleY;
     });
 
-    // Открытие полки кликом по канвасу (в виде склада)
+    // Открытие полки кликом по канвасу (режим склада)
     this.getEl('gameCanvas')?.addEventListener('click', (e)=>{
       if (this.gameState!=='playing' || this.inShelfView || !this.canvas) return;
       const {x,y} = this._pointerXY(e);
       const idx=this.warehouse.shelves.findIndex(s=>x>=s.x&&x<=s.x+s.width&&y>=s.y&&y<=s.y+s.height);
       if (idx>=0) this.enterShelfView(idx);
     });
-
-    // --- ТАЧ-КНОПКИ (опционально, если добавлены в HTML) ---
-    const bindTouchBtn = (id, keyCode) => {
-      const el = this.getEl(id);
-      if (!el) return;
-      const onStart = (ev)=>{ ev.preventDefault(); this.keys[keyCode] = true; };
-      const onEnd   = (ev)=>{ ev.preventDefault(); this.keys[keyCode] = false; };
-      el.addEventListener('touchstart', onStart, {passive:false});
-      el.addEventListener('touchend', onEnd, {passive:false});
-      el.addEventListener('touchcancel', onEnd, {passive:false});
-    };
-    bindTouchBtn('btnUp', 'ArrowUp');
-    bindTouchBtn('btnDown', 'ArrowDown');
-    bindTouchBtn('btnLeft', 'ArrowLeft');
-    bindTouchBtn('btnRight', 'ArrowRight');
-
-    const interactBtn = this.getEl('btnInteract');
-    if (interactBtn){
-      interactBtn.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); this.handleInteraction(); }, {passive:false});
-      interactBtn.addEventListener('click', (ev)=>{ ev.preventDefault(); this.handleInteraction(); });
-    }
-  }
-
-  // Нормализация координат указателя (мышь/тач)
-  _pointerXY(e){
-    const r=this.canvas?.getBoundingClientRect();
-    if (!r) return {x:0,y:0};
-    if (e.touches && e.touches[0]){
-      const t=e.touches[0];
-      return { x: t.clientX - r.left, y: t.clientY - r.top };
-    }
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
   showScreen(screenId){
@@ -138,17 +108,29 @@ class WareMoverGame {
     if (screenId==='gameScreen'){
       this.canvas=this.getEl('gameCanvas');
       if (!this.canvas){ console.error('No canvas'); return; }
+      // ВАЖНО: физический размер == логический (для точных координат)
       this.canvas.width=this.warehouse.width;
       this.canvas.height=this.warehouse.height;
       this.ctx=this.canvas.getContext('2d');
       this.canvas.tabIndex=0; this.canvas.focus();
-      this.canvas.style.touchAction = 'none'; // отключаем браузерные жесты
+      this.canvas.style.touchAction = 'none';
 
       this.gameState='playing';
       this.gameLoop();
     } else {
-      this.exitShelfView(); // на всякий случай снимем обработчики
+      this.exitShelfView();
     }
+  }
+
+  // нормализация координат (мышь/тач) с учётом масштаба canvas
+  _pointerXY(e){
+    if (!this.canvas) return {x:0,y:0};
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width  / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+    const clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
   }
 
   // ---------- склад ----------
@@ -189,7 +171,6 @@ class WareMoverGame {
     this.currentOrder=this.generateOrder();
     this.player.x=100; this.player.y=100;
 
-    // сброс счётчиков по стеллажам
     this.uniqueShelvesOpened.clear();
     this.totalShelfOpens = 0;
     this.relevantShelfOpens = 0;
@@ -242,17 +223,16 @@ class WareMoverGame {
     if (this.nearInteractable==='computer'){
       c.innerHTML='<p>Нажмите E/Пробел или кнопку на экране, чтобы посмотреть заказ</p>';
     } else if (this.nearInteractable && this.nearInteractable.type==='shelf'){
-      c.innerHTML='<p>Стеллаж рядом. Нажмите кнопку на экране или тапните по полке — открыть</p>';
+      c.innerHTML='<p>Стеллаж рядом. Нажмите кнопку на экране или кликните/тапните по полке — открыть</p>';
     } else c.innerHTML='';
   }
 
-  // ТОГГЛ: E/Space / кнопка на экране
+  // ТОГГЛ: E/Space
   handleInteraction(){
     if (this.inShelfView){ this.exitShelfView(); return; }
     if (this.nearInteractable==='computer') this.showOrderInfo();
     else if (this.nearInteractable && this.nearInteractable.type==='shelf') this.enterShelfView(this.nearInteractable.index);
   }
-
   showOrderInfo(){ this.updateOrderPanel(); }
 
   // ---------- полки ----------
@@ -260,14 +240,12 @@ class WareMoverGame {
     console.log('[WareMover] enter shelf', index);
     this.inShelfView=true; this.currentShelf=index;
 
-    // учёт открытий стеллажей
+    // учёт открытий
     this.totalShelfOpens++;
     this.uniqueShelvesOpened.add(index);
-
     const shelf = this.warehouse.shelves[index];
     const orderSkus = new Set(this.currentOrder.items.map(i=>i.sku));
-    const hasRelevant = shelf.items.some(it => orderSkus.has(it.sku));
-    if (hasRelevant) this.relevantShelfOpens++;
+    if (shelf.items.some(it => orderSkus.has(it.sku))) this.relevantShelfOpens++;
 
     // навешиваем обработчики
     if (this.canvas){
@@ -297,7 +275,7 @@ class WareMoverGame {
     }
   }
 
-  // Универсальный обработчик (мышь/тач) в режиме полки — клик только по "уголку"
+  // Универсальный обработчик (мышь/тач) — клик только по "уголку"
   handleShelfCanvasPointer(e){
     if (!this.inShelfView) return;
     const {x,y} = this._pointerXY(e);
@@ -321,17 +299,19 @@ class WareMoverGame {
     const cx2 = cx1 + this.cornerW;
     const cy2 = cy1 + this.cornerH;
 
-    // клик/тап должен быть ИМЕННО по уголку
-    const inCorner = x>=cx1 && x<=cx2 && y>=cy1 && y<=cy2;
+    const hs = this.cornerHitSlop;
+    const inCorner = (x >= cx1 - hs && x <= cx2 + hs && y >= cy1 - hs && y <= cy2 + hs);
+
+    // debug:
+    // console.log('click', {x,y,idx,cardX,cardY,corner:[cx1,cy1,cx2,cy2], inCorner});
+
     if (!inCorner) return;
 
     const shelfItem=shelf.items[idx];
     const orderItem=this.currentOrder?.items.find(oi=>oi.sku===shelfItem.sku);
-
     if (!orderItem){ this.totalErrors++; this.score-=10; this.updateOrderPanel(); this.updateHUD(); return; }
     if (orderItem.completed) return;
 
-    // забираем всё из ячейки, но не больше остатка по заказу
     const remainingToPick = orderItem.requiredQuantity - orderItem.pickedQuantity;
     const take = Math.min(remainingToPick, shelfItem.quantity);
     if (take<=0) return;
@@ -354,7 +334,7 @@ class WareMoverGame {
     return (col>=0&&col<4&&row>=0&&row<3) ? row*4+col : -1;
   }
 
-  // Фактический перенос штук
+  // перенос штук
   pickItem(shelfItem, amount=1){
     if (!this.currentOrder) return;
     const orderItem=this.currentOrder.items.find(oi=>oi.sku===shelfItem.sku);
@@ -390,61 +370,50 @@ class WareMoverGame {
 
   isOrderCompleted(){ return !!this.currentOrder && this.currentOrder.items.every(i=>i.completed); }
 
-  // ---------- Метрики выполнения/времени/стеллажей ----------
-  calculateCompletion(){ // 0..1
+  // ---------- Метрики ----------
+  calculateCompletion(){
     if (!this.currentOrder) return 0;
     const totalReq = this.currentOrder.items.reduce((s,i)=>s+i.requiredQuantity,0) || 1;
     const totalPic = this.currentOrder.items.reduce((s,i)=>s+i.pickedQuantity,0);
     return Math.min(1, totalPic / totalReq);
   }
-
-  calculateTimeEfficiency(){ // 0..1
+  calculateTimeEfficiency(){
     if (!this.currentOrder) return 0;
     const totalReq = this.currentOrder.items.reduce((s,i)=>s+i.requiredQuantity,0);
     const timeSec = Math.max(1, Math.floor(this.gameTime/1000));
     const par = Math.max(1, Math.round(totalReq * this.SECONDS_PER_UNIT));
-    const eff = par / timeSec; // >1 не даём
+    const eff = par / timeSec;
     return Math.max(0, Math.min(1, eff));
   }
-
   getRequiredShelvesSet(){
     const orderSkus = new Set(this.currentOrder.items.map(i=>i.sku));
     const set = new Set();
     this.warehouse.shelves.forEach((shelf, idx)=>{
-      if (shelf.items.some(it => orderSkus.has(it.sku) && it.quantity > 0)){
-        set.add(idx);
-      }
+      if (shelf.items.some(it => orderSkus.has(it.sku))){ set.add(idx); }
     });
     return set;
   }
-
-  calculateShelfEfficiency(){ // вариант 1: required vs opened
+  calculateShelfEfficiency(){
     if (!this.currentOrder) return 0;
     const required = this.getRequiredShelvesSet().size || 1;
     const opened = this.uniqueShelvesOpened.size || 1;
-    const eff = required / opened; // ≤1
+    const eff = required / opened;
     return Math.max(0, Math.min(1, eff));
   }
-
-  calculateShelfPrecision(){ // вариант 2: relevant / total
+  calculateShelfPrecision(){
     const eff = this.relevantShelfOpens / Math.max(1, this.totalShelfOpens);
     return Math.max(0, Math.min(1, eff));
-  }
-
-  calculateShelfComposite(){ // микс двух показателей
+    }
+  calculateShelfComposite(){
     const e1 = this.calculateShelfEfficiency();
     const e2 = this.calculateShelfPrecision();
     return (e1*0.6 + e2*0.4);
   }
-
-  calculateFinalPercent(){ // 0..100
+  calculateFinalPercent(){
     const comp = this.calculateCompletion();
     const time = this.calculateTimeEfficiency();
-    const shelf = this.calculateShelfComposite(); // можно заменить на calculateShelfEfficiency()
-
-    const final = (this.WEIGHT_COMPLETION * comp)
-                + (this.WEIGHT_TIME * time)
-                + (this.WEIGHT_SHELF * shelf);
+    const shelf = this.calculateShelfComposite();
+    const final = (this.WEIGHT_COMPLETION * comp) + (this.WEIGHT_TIME * time) + (this.WEIGHT_SHELF * shelf);
     return Math.round(final * 100);
   }
 
@@ -487,10 +456,9 @@ class WareMoverGame {
     set('accuracy', `${acc}%`);
     set('ordersCompleted', this.ordersCompleted);
 
-    // новые метрики
     set('completionPercent', Math.round(this.calculateCompletion()*100) + '%');
     set('timeEfficiency', Math.round(this.calculateTimeEfficiency()*100) + '%');
-    set('shelfEff', Math.round(this.calculateShelfComposite()*100) + '%'); // или calculateShelfEfficiency()
+    set('shelfEff', Math.round(this.calculateShelfComposite()*100) + '%');
     set('finalPercent', this.calculateFinalPercent() + '%');
 
     this.showScreen('resultsScreen');
@@ -504,26 +472,21 @@ class WareMoverGame {
   }
 
   renderWarehouse(){
-    // полки
     this.ctx.fillStyle='#8b4513';
     this.warehouse.shelves.forEach(s=>this.ctx.fillRect(s.x,s.y,s.width,s.height));
 
-    // подсветка активной полки
     if (this.nearInteractable && this.nearInteractable.type==='shelf'){
       const s=this.warehouse.shelves[this.nearInteractable.index];
       this.ctx.strokeStyle='rgba(241,196,15,.95)'; this.ctx.lineWidth=3;
       this.ctx.strokeRect(s.x-3,s.y-3,s.width+6,s.height+6);
     }
 
-    // компьютер
     this.ctx.fillStyle='#2c3e50';
     this.ctx.fillRect(this.warehouse.computer.x,this.warehouse.computer.y,this.warehouse.computer.width,this.warehouse.computer.height);
 
-    // игрок
     this.ctx.fillStyle='#e74c3c';
     this.ctx.fillRect(this.player.x,this.player.y,this.player.width,this.player.height);
 
-    // индикатор "E"
     if (this.nearInteractable){
       this.ctx.fillStyle='rgba(241,196,15,.9)'; this.ctx.font='16px Arial';
       this.ctx.fillText('E', this.player.x + this.player.width + 10, this.player.y + 20);
@@ -561,30 +524,27 @@ class WareMoverGame {
       const o=this.currentOrder?.items.find(oi=>oi.sku===it.sku);
       if (o) this.ctx.fillText(`Собрано: ${o.pickedQuantity}/${o.requiredQuantity}`, x+10, y+65);
 
-      // --- уголок: кликабельная зона (без цифры, просто "+") ---
+      // --- уголок (без цифры, просто "+") ---
       const remaining = o ? (o.requiredQuantity - o.pickedQuantity) : 0;
 
       if (o?.completed){
-        // зелёный уголок = позиция заказа закрыта
         this.ctx.fillStyle='rgba(46,204,113,0.8)';
         this.ctx.fillRect(x + w - this.cornerOffsetX, y + this.cornerOffsetY, this.cornerW, this.cornerH);
         this.ctx.fillStyle='#fff'; this.ctx.font='12px Arial';
         this.ctx.fillText('✔', x + w - this.cornerOffsetX + 7, y + this.cornerOffsetY + 15);
       } else if (it.quantity>0 && remaining>0){
-        // красный уголок с "+"
         this.ctx.fillStyle='#c0392b';
         this.ctx.fillRect(x + w - this.cornerOffsetX, y + this.cornerOffsetY, this.cornerW, this.cornerH);
         this.ctx.fillStyle='#fff'; this.ctx.font='bold 14px Arial';
         this.ctx.fillText('+', x + w - this.cornerOffsetX + 9, y + this.cornerOffsetY + 15);
       } else {
-        // серый уголок = пусто/не требуется
         this.ctx.fillStyle='rgba(0,0,0,0.3)';
         this.ctx.fillRect(x + w - this.cornerOffsetX, y + this.cornerOffsetY, this.cornerW, this.cornerH);
         this.ctx.fillStyle='#fff'; this.ctx.font='11px Arial';
         this.ctx.fillText('-', x + w - this.cornerOffsetX + 9, y + this.cornerOffsetY + 15);
       }
 
-      // подсветка уголка при наведении (для десктопа)
+      // подсветка уголка при наведении мыши
       if (this.mousePos){
         const cx1 = x + w - this.cornerOffsetX;
         const cy1 = y + this.cornerOffsetY;
@@ -598,7 +558,7 @@ class WareMoverGame {
         }
       }
 
-      // Оверлеи «Готово/Пусто»
+      // оверлеи «Готово/Пусто»
       if (o?.completed){
         this.ctx.fillStyle='rgba(46,204,113,0.25)'; this.ctx.fillRect(x,y,w-10,h-10);
         this.ctx.fillStyle='#fff'; this.ctx.font='bold 14px Arial'; this.ctx.fillText('Готово', x+10, y+85);
