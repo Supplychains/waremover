@@ -1,76 +1,61 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>WareMover Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./style.css?v=5" />
+  <meta charset="UTF-8">
+  <title>WareMover v14</title>
+  <link rel="stylesheet" href="./style.v14.css">
 </head>
 <body>
+
   <!-- Главное меню -->
   <section id="mainMenu" class="screen active">
-    <div class="panel">
-      <h1>WareMover</h1>
-      <div class="btn-row">
-        <button id="startGameBtn">Начать игру</button>
-        <button id="helpBtn" class="secondary">Помощь</button>
-      </div>
-    </div>
+    <h1>WareMover</h1>
+    <button id="startGameBtn">Начать игру</button>
+    <button id="helpBtn">Помощь</button>
   </section>
 
-  <!-- Игровой экран -->
+  <!-- Экран игры -->
   <section id="gameScreen" class="screen">
-    <div id="stage">
-      <canvas id="gameCanvas"></canvas>
-
-      <div id="hud">
-        <div class="hud-grid">
-          <div>Очки: <span id="score">0</span></div>
-          <div>Время: <span id="time">00:00</span></div>
-          <div>Метод: <span id="currentMethod">Pick-by-List</span></div>
-          <div>Прогресс: <span id="currentItem">0</span>/<span id="totalItems">0</span></div>
-        </div>
-        <div class="hud-buttons">
-          <button id="pauseBtn" class="secondary">⏸ Пауза</button>
-          <button id="exitToMenuBtn">🏠 В меню</button>
-        </div>
-      </div>
-
-      <div id="interactionPanel" class="hidden">
-        <div id="interactionContent"></div>
-      </div>
-
-      <aside id="orderPanel">
-        <h3>Текущий заказ</h3>
-        <div id="orderList"></div>
-      </aside>
+    <div id="hud">
+      <span>Очки: <span id="score">0</span></span>
+      <span>Время: <span id="time">00:00</span></span>
+      <span>Метод: <span id="currentMethod">Pick-by-List</span></span>
+      <span>Собрано: <span id="currentItem">0</span>/<span id="totalItems">0</span></span>
+      <button id="pauseBtn">⏸</button>
+      <button id="exitToMenuBtn">Выйти в меню</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="interactionPanel" class="hidden">
+      <div id="interactionContent"></div>
+    </div>
+    <div id="orderPanel">
+      <h3>Заказ</h3>
+      <div id="orderList"></div>
     </div>
   </section>
 
-  <!-- Помощь -->
+  <!-- Экран помощи -->
   <section id="helpScreen" class="screen">
-    <div class="panel">
-      <h2>Помощь</h2>
-      <p>WASD/стрелки — движение • E/Пробел — открыть/закрыть полку • ЛКМ — взять всё доступное • ПКМ — вернуть 1</p>
-      <button id="backFromHelpBtn" class="secondary">Назад</button>
-    </div>
+    <h2>Помощь</h2>
+    <p>Управление: WASD/стрелки — движение. E или Пробел — открыть/закрыть полку, взаимодействие.</p>
+    <button id="backFromHelpBtn">Назад</button>
   </section>
 
-  <!-- Результаты -->
+  <!-- Экран результатов -->
   <section id="resultsScreen" class="screen">
-    <div class="panel">
-      <h2>Результаты</h2>
-      <p>Очки: <span id="finalScore"><span>0</span></span></p>
-      <p>Время: <span id="finalTime"><span>00:00</span></span></p>
-      <p>Точность: <span id="accuracy"><span>100%</span></span></p>
-      <p>Заказы: <span id="ordersCompleted"><span>0</span></span></p>
-      <div class="btn-row">
-        <button id="playAgainBtn">Играть снова</button>
-        <button id="backToMainBtn" class="secondary">Главное меню</button>
-      </div>
-    </div>
+    <h2>Результаты</h2>
+    <p>Очки: <span id="finalScore"><span>0</span></span></p>
+    <p>Время: <span id="finalTime"><span>00:00</span></span></p>
+    <p>Точность: <span id="accuracy"><span>0%</span></span></p>
+    <p>Заказы выполнены: <span id="ordersCompleted"><span>0</span></span></p>
+    <p>Выполнение: <span id="completionPercent"><span>0%</span></span></p>
+    <p>Эффективность по времени: <span id="timeEfficiency"><span>0%</span></span></p>
+    <p>Эффективность по стеллажам: <span id="shelfEff"><span>0%</span></span></p>
+    <p><strong>Итог:</strong> <span id="finalPercent"><span>0%</span></span></p>
+    <button id="playAgainBtn">Играть снова</button>
+    <button id="backToMainBtn">Меню</button>
   </section>
 
-  <script src="./game.js?v=5" defer></script>
+  <script src="./game.v14.js" defer></script>
 </body>
 </html>
